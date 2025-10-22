@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Vulnerability, VulnerabilityStatus } from '../types';
+import { Vulnerability, VulnerabilityStatus, Severity } from '../types';
 import { NEW_SCAN_FINDING } from '../constants';
-import { XIcon, CheckCircleIcon } from './Icons';
+import { XIcon, CheckCircleIcon, ChevronDownIcon } from './Icons';
 
 interface NewScanModalProps {
     isOpen: boolean;
@@ -13,13 +13,23 @@ type ScanStep = 'form' | 'scanning' | 'complete';
 
 export const NewScanModal: React.FC<NewScanModalProps> = ({ isOpen, onClose, onAddVulnerability }) => {
     const [scanStep, setScanStep] = useState<ScanStep>('form');
+    
+    // Basic options
     const [scanName, setScanName] = useState('Weekly Production Scan');
     const [targetUrl, setTargetUrl] = useState('https://api.example.com/v2/products/search');
     
+    // Advanced options
+    const [showAdvanced, setShowAdvanced] = useState(false);
+    const [scanDepth, setScanDepth] = useState('Normal');
+    const [includeRegex, setIncludeRegex] = useState('');
+    const [excludeRegex, setExcludeRegex] = useState('/api/v1/health');
+    const [minSeverity, setMinSeverity] = useState<Severity>(Severity.Low);
+
     useEffect(() => {
         if (isOpen) {
             // Reset state when modal is opened
             setScanStep('form');
+            setShowAdvanced(false);
         }
     }, [isOpen]);
 
@@ -41,6 +51,7 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({ isOpen, onClose, onA
                 statusHistory: [
                     { status: VulnerabilityStatus.New, timestamp: discoveredAt }
                 ],
+                assignee: undefined,
             };
             onAddVulnerability(newVulnerability);
             setScanStep('complete');
@@ -90,13 +101,44 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({ isOpen, onClose, onA
                                     required
                                 />
                             </div>
+                            <button type="button" onClick={() => setShowAdvanced(!showAdvanced)} className="text-sm text-indigo-400 hover:text-indigo-300 flex items-center py-2">
+                                {showAdvanced ? 'Hide' : 'Show'} Advanced Options
+                                <ChevronDownIcon className={`h-5 w-5 ml-1 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {showAdvanced && (
+                                <div className="space-y-4 pt-4 border-t border-gray-700/50">
+                                    <div>
+                                        <label htmlFor="scan-depth" className="block text-sm font-medium text-gray-300">Scan Depth</label>
+                                        <select id="scan-depth" value={scanDepth} onChange={e => setScanDepth(e.target.value)} className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                                            <option>Quick</option>
+                                            <option>Normal</option>
+                                            <option>Deep</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label htmlFor="include-regex" className="block text-sm font-medium text-gray-300">Include Endpoints (Regex)</label>
+                                        <input type="text" id="include-regex" value={includeRegex} onChange={e => setIncludeRegex(e.target.value)} className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="/api/v2/.*"/>
+                                    </div>
+                                     <div>
+                                        <label htmlFor="exclude-regex" className="block text-sm font-medium text-gray-300">Exclude Endpoints (Regex)</label>
+                                        <input type="text" id="exclude-regex" value={excludeRegex} onChange={e => setExcludeRegex(e.target.value)} className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="/admin/.*"/>
+                                    </div>
+                                    <div>
+                                        <label htmlFor="min-severity" className="block text-sm font-medium text-gray-300">Minimum Severity to Report</label>
+                                        <select id="min-severity" value={minSeverity} onChange={e => setMinSeverity(e.target.value as Severity)} className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                                            {Object.values(Severity).map(s => <option key={s} value={s}>{s}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+                            )}
                         </form>
                     )}
 
                     {scanStep === 'scanning' && (
                         <div className="text-center py-8">
                             <div className="flex justify-center items-center mb-4">
-                               <svg className="animate-spin h-10 w-10 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                               <svg className="animate-spin h-10 w-10 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="http://www.w3.org/2000/svg">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>

@@ -1,8 +1,27 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Severity, Vulnerability, VulnerabilityStatus } from '../types';
 import { getRemediation, getRelatedCVEs, CveInfo, getCveDetails, CveDetails } from '../services/geminiService';
-import { severityConfig, severityDotColor, statusConfig, statusTimelineDotColor } from '../constants';
-import { ChevronRightIcon, ChevronDownIcon, ExternalLinkIcon } from './Icons';
+import { severityConfig, severityDotColor, statusConfig, statusTimelineDotColor, teamMembers } from '../constants';
+import { ChevronRightIcon, ChevronDownIcon, ExternalLinkIcon, XCircleIcon } from './Icons';
+
+const AssigneeAvatar: React.FC<{ name?: string }> = ({ name }) => {
+    if (!name) {
+        return <div className="h-6 w-6 rounded-full bg-gray-600 border-2 border-gray-800" title="Unassigned"></div>;
+    }
+
+    const initial = name.charAt(0).toUpperCase();
+    const colors = ['bg-pink-600', 'bg-purple-600', 'bg-yellow-600', 'bg-green-600', 'bg-blue-600'];
+    const colorClass = colors[name.charCodeAt(0) % colors.length];
+
+    return (
+        <div 
+            className={`h-6 w-6 rounded-full flex items-center justify-center font-bold text-white text-xs border-2 border-gray-800 ${colorClass}`}
+            title={`Assigned to ${name}`}
+        >
+            {initial}
+        </div>
+    );
+};
 
 const VulnerabilityListItem: React.FC<{
     vulnerability: Vulnerability;
@@ -33,41 +52,47 @@ const VulnerabilityListItem: React.FC<{
                     {vulnerability.severity}
                 </span>
             </div>
-            <p className="text-sm text-gray-400 font-mono mt-2">
+            <p className="text-sm text-gray-400 font-mono mt-2 truncate">
                 <span className={`font-bold mr-2 ${vulnerability.endpoint.method === 'POST' ? 'text-green-400' : 'text-blue-400'}`}>{vulnerability.endpoint.method}</span>
                 {vulnerability.endpoint.path}
             </p>
             <div className="flex items-center justify-between mt-3 text-xs">
                 <span className="text-gray-500">Discovered: {new Date(vulnerability.discoveredAt).toLocaleDateString()}</span>
-
-                {vulnerability.status === VulnerabilityStatus.New ? (
-                    <div className="flex items-center space-x-2">
-                        <button 
-                            onClick={(e) => handleActionClick(e, VulnerabilityStatus.Acknowledged)} 
-                            className="px-2 py-1 font-semibold text-yellow-300 bg-yellow-900/50 hover:bg-yellow-800/70 rounded transition-colors"
-                            aria-label={`Acknowledge ${vulnerability.type}`}
-                        >
-                            Acknowledge
-                        </button>
-                        <button 
-                            onClick={(e) => handleActionClick(e, VulnerabilityStatus.Fixed)} 
-                            className="px-2 py-1 font-semibold text-green-300 bg-green-900/50 hover:bg-green-800/70 rounded transition-colors"
-                            aria-label={`Mark ${vulnerability.type} as fixed`}
-                        >
-                            Fix
-                        </button>
-                    </div>
-                ) : (
-                    <span className={`px-2 py-1 font-bold rounded-full ${statusConfig[vulnerability.status].bg} ${statusConfig[vulnerability.status].color}`}>
-                        {vulnerability.status}
-                    </span>
-                )}
+                <div className="flex items-center space-x-2">
+                    {vulnerability.status === VulnerabilityStatus.New ? (
+                        <>
+                            <button 
+                                onClick={(e) => handleActionClick(e, VulnerabilityStatus.Acknowledged)} 
+                                className="px-2 py-1 font-semibold text-yellow-300 bg-yellow-900/50 hover:bg-yellow-800/70 rounded transition-colors"
+                                aria-label={`Acknowledge ${vulnerability.type}`}
+                            >
+                                Acknowledge
+                            </button>
+                            <button 
+                                onClick={(e) => handleActionClick(e, VulnerabilityStatus.Fixed)} 
+                                className="px-2 py-1 font-semibold text-green-300 bg-green-900/50 hover:bg-green-800/70 rounded transition-colors"
+                                aria-label={`Mark ${vulnerability.type} as fixed`}
+                            >
+                                Fix
+                            </button>
+                        </>
+                    ) : (
+                        <span className={`px-2 py-1 font-bold rounded-full ${statusConfig[vulnerability.status].bg} ${statusConfig[vulnerability.status].color}`}>
+                            {vulnerability.status}
+                        </span>
+                    )}
+                    <AssigneeAvatar name={vulnerability.assignee} />
+                </div>
             </div>
         </li>
     );
 };
 
-const VulnerabilityDetail: React.FC<{ vulnerability: Vulnerability; onStatusChange: (id: string, newStatus: VulnerabilityStatus) => void; }> = ({ vulnerability, onStatusChange }) => {
+const VulnerabilityDetail: React.FC<{ 
+    vulnerability: Vulnerability; 
+    onStatusChange: (id: string, newStatus: VulnerabilityStatus) => void; 
+    onAssigneeChange: (id: string, newAssignee?: string) => void;
+}> = ({ vulnerability, onStatusChange, onAssigneeChange }) => {
     const [remediation, setRemediation] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -146,7 +171,7 @@ const VulnerabilityDetail: React.FC<{ vulnerability: Vulnerability; onStatusChan
 
     return (
         <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 h-full overflow-y-auto">
-            <div className="flex justify-between items-start mb-4">
+            <div className="flex justify-between items-start mb-4 gap-4">
                 <h2 className="text-xl font-bold text-white flex-1 pr-4">{vulnerability.type}</h2>
                 <div className="relative">
                     <select
@@ -167,7 +192,7 @@ const VulnerabilityDetail: React.FC<{ vulnerability: Vulnerability; onStatusChan
                 </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-4 text-sm mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-6">
                 <div className="bg-gray-900/50 p-3 rounded-md">
                     <div className="text-gray-400 font-semibold">Severity</div>
                     <div className={`font-bold ${severityConfig[vulnerability.severity].color}`}>{vulnerability.severity}</div>
@@ -175,6 +200,23 @@ const VulnerabilityDetail: React.FC<{ vulnerability: Vulnerability; onStatusChan
                  <div className="bg-gray-900/50 p-3 rounded-md">
                     <div className="text-gray-400 font-semibold">OWASP Top 10</div>
                     <div className="font-bold text-gray-200">{vulnerability.owaspId}</div>
+                </div>
+                 <div className="bg-gray-900/50 p-3 rounded-md">
+                    <label htmlFor="assignee-select" className="text-gray-400 font-semibold">Assignee</label>
+                     <select
+                        id="assignee-select"
+                        value={vulnerability.assignee || 'Unassigned'}
+                        onChange={(e) => onAssigneeChange(vulnerability.id, e.target.value === 'Unassigned' ? undefined : e.target.value)}
+                        className="w-full bg-transparent font-bold text-gray-200 focus:outline-none mt-1"
+                        aria-label="Change vulnerability assignee"
+                    >
+                        <option value="Unassigned" className="bg-gray-900 font-bold text-gray-400">Unassigned</option>
+                        {teamMembers.map(member => (
+                            <option key={member} value={member} className="bg-gray-900 font-bold text-white">
+                                {member}
+                            </option>
+                        ))}
+                    </select>
                 </div>
             </div>
             
@@ -329,16 +371,23 @@ const VulnerabilityDetail: React.FC<{ vulnerability: Vulnerability; onStatusChan
 interface VulnerabilitiesViewProps {
     vulnerabilities: Vulnerability[];
     setVulnerabilities: React.Dispatch<React.SetStateAction<Vulnerability[]>>;
+    filter: Severity | null;
+    setFilter: (filter: Severity | null) => void;
 }
 
-export const VulnerabilitiesView: React.FC<VulnerabilitiesViewProps> = ({ vulnerabilities, setVulnerabilities }) => {
-  const [selectedVulnerabilityId, setSelectedVulnerabilityId] = useState<string | null>(vulnerabilities[0]?.id || null);
+export const VulnerabilitiesView: React.FC<VulnerabilitiesViewProps> = ({ vulnerabilities, setVulnerabilities, filter, setFilter }) => {
+  const filteredVulnerabilities = filter 
+      ? vulnerabilities.filter(v => v.severity === filter)
+      : vulnerabilities;
+
+  const [selectedVulnerabilityId, setSelectedVulnerabilityId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!selectedVulnerabilityId && vulnerabilities.length > 0) {
-        setSelectedVulnerabilityId(vulnerabilities[0].id);
-    }
-  }, [vulnerabilities, selectedVulnerabilityId]);
+    // If there's a filter, select the first item of the filtered list.
+    // Otherwise, select the first item of the full list.
+    const newSelection = filteredVulnerabilities[0]?.id || null;
+    setSelectedVulnerabilityId(newSelection);
+  }, [filter, vulnerabilities]); // Rerun when filter or the main list changes
 
   const selectedVulnerability = vulnerabilities.find(v => v.id === selectedVulnerabilityId);
 
@@ -363,13 +412,31 @@ export const VulnerabilitiesView: React.FC<VulnerabilitiesViewProps> = ({ vulner
     );
   };
 
+  const handleAssigneeChange = (vulnerabilityId: string, newAssignee?: string) => {
+      setVulnerabilities(currentVulnerabilities => 
+        currentVulnerabilities.map(v => 
+            v.id === vulnerabilityId ? { ...v, assignee: newAssignee } : v
+        )
+      );
+  };
+
   return (
     <div className="flex flex-col h-full">
-        <h1 className="text-3xl font-bold text-white mb-6">Vulnerabilities</h1>
+        <div className="flex items-center justify-between mb-6">
+            <h1 className="text-3xl font-bold text-white">Vulnerabilities</h1>
+            {filter && (
+                <div className={`flex items-center px-3 py-1 rounded-full text-sm font-semibold ${severityConfig[filter].bg} ${severityConfig[filter].color}`}>
+                    <span>Filtering by: <span className="font-bold">{filter}</span></span>
+                    <button onClick={() => setFilter(null)} className="ml-2 hover:bg-white/20 rounded-full p-0.5">
+                        <XCircleIcon className="h-5 w-5" />
+                    </button>
+                </div>
+            )}
+        </div>
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 overflow-hidden">
             <div className="lg:col-span-1 h-full overflow-y-auto pr-2">
                 <ul className="space-y-3">
-                    {vulnerabilities.map(v => (
+                    {filteredVulnerabilities.map(v => (
                         <VulnerabilityListItem 
                             key={v.id}
                             vulnerability={v}
@@ -385,10 +452,11 @@ export const VulnerabilitiesView: React.FC<VulnerabilitiesViewProps> = ({ vulner
                     <VulnerabilityDetail 
                         vulnerability={selectedVulnerability} 
                         onStatusChange={handleStatusChange} 
+                        onAssigneeChange={handleAssigneeChange}
                     />
                 ) : (
                     <div className="flex items-center justify-center h-full bg-gray-800 rounded-lg text-gray-500">
-                        {vulnerabilities.length > 0 ? 'Select a vulnerability to see details.' : 'No vulnerabilities found. Run a new scan to get started.'}
+                        {vulnerabilities.length > 0 ? (filter ? 'No vulnerabilities match the current filter.' : 'Select a vulnerability to see details.') : 'No vulnerabilities found. Run a new scan to get started.'}
                     </div>
                 )}
             </div>

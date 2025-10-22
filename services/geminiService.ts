@@ -158,11 +158,12 @@ export const getCveDetails = async (cveId: string): Promise<CveDetails> => {
             },
         });
 
-        // The type of `JSON.parse` is `any`, which can lead to type errors
-        // when assigning to a more specific type. Adding `as CveDetails`
-        // asserts that the parsed object conforms to the CveDetails interface,
-        // resolving the 'unknown[]' is not assignable to 'string[]' error for the `references` property.
-        return JSON.parse(response.text) as CveDetails;
+        // FIX: The type of `JSON.parse` is `any`, which can lead to type mismatches
+        // in strict TypeScript environments (e.g., assigning `any[]` to `string[]`).
+        // We explicitly cast the parsed object to `CveDetails` to align with the
+        // expected response shape defined in `responseSchema`.
+        const parsedJson = JSON.parse(response.text.trim());
+        return parsedJson as CveDetails;
 
     } catch (error) {
         console.error(`Error calling Gemini API for CVE details (${cveId}):`, error);

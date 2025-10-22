@@ -1,4 +1,5 @@
 
+
 export enum Severity {
   Critical = 'Critical',
   High = 'High',
@@ -32,4 +33,5 @@ export interface Vulnerability {
   };
   details: string;
   discoveredAt: string;
+  assignee?: string;
 }

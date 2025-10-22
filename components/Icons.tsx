@@ -63,12 +63,18 @@ export const GitlabIcon: React.FC<IconProps> = ({ className }) => (
 );
 
 export const BitbucketIcon: React.FC<IconProps> = ({ className }) => (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M22.502 2.146a.5.5 0 00-.53-.02l-10.5 6.007-7.22-4.13a.5.5 0 00-.51.02L1.498 5.869a.5.5 0 00-.248.434v11.394a.5.5 0 00.248.434l2.244 1.844a.5.5 0 00.51.02l7.22-4.13 10.504 6.006a.5.5 0 00.53-.02l2.254-1.844a.5.5 0 00.248-.434V4.424a.5.5 0 00-.248-.434L22.502 2.146zM9.918 13.918L3.25 18.048V6.312l6.668 4.13v3.476zm10.834-3.476L14.082 6.31v11.738l6.67-4.13V10.442z"/></svg>
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M22.502 2.146a.5.5 0 00-.53-.02l-10.5 6.007-7.22-4.13a.5.5 0 00-.51.02L1.498 5.869a.5.5 0 00-.248.434v11.394a.5.5 0 00.248.434l2.244 1.844a.5.5 0 00.51.02l7.22-4.13 10.504 6.006a.5.5 0 00.53-.02l2.254-1.844a.5.5 0 00-.248-.434V4.424a.5.5 0 00-.248-.434L22.502 2.146zM9.918 13.918L3.25 18.048V6.312l6.668 4.13v3.476zm10.834-3.476L14.082 6.31v11.738l6.67-4.13V10.442z"/></svg>
 );
 
 export const XIcon: React.FC<IconProps> = ({ className }) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+    </svg>
+);
+
+export const XCircleIcon: React.FC<IconProps> = ({ className }) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
 );
 
@@ -110,5 +116,17 @@ export const MenuIcon: React.FC<IconProps> = ({ className }) => (
 export const ChevronLeftIcon: React.FC<IconProps> = ({ className }) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
         <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+    </svg>
+);
+
+export const ArrowUpRightIcon: React.FC<IconProps> = ({ className }) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25" />
+    </svg>
+);
+
+export const ArrowDownRightIcon: React.FC<IconProps> = ({ className }) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 4.5l15 15m0 0V8.25m0 11.25H8.25" />
     </svg>
 );

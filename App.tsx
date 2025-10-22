@@ -7,7 +7,7 @@ import { IntegrationsView } from './components/IntegrationsView';
 import { SettingsView } from './components/SettingsView';
 import { NewScanModal } from './components/NewScanModal';
 import { VULNERABILITIES } from './constants';
-import type { Vulnerability } from './types';
+import type { Vulnerability, Severity } from './types';
 
 export type Page = 'Dashboard' | 'Vulnerabilities' | 'Integrations' | 'Settings';
 
@@ -16,6 +16,7 @@ const App: React.FC = () => {
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
   const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>(VULNERABILITIES);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [vulnerabilityFilter, setVulnerabilityFilter] = useState<Severity | null>(null);
 
   const handleAddVulnerability = (newVulnerability: Vulnerability) => {
     setVulnerabilities(prev => [newVulnerability, ...prev]);
@@ -23,18 +24,33 @@ const App: React.FC = () => {
     setIsScanModalOpen(false);
   };
 
+  const handleNavigateToVulnerabilities = () => {
+    setVulnerabilityFilter(null); // Clear any filters when navigating directly
+    setActivePage('Vulnerabilities');
+  };
+
+  const handleFilterVulnerabilities = (severity: Severity) => {
+    setVulnerabilityFilter(severity);
+    setActivePage('Vulnerabilities');
+  };
+
   const renderContent = () => {
     switch (activePage) {
       case 'Dashboard':
-        return <Dashboard setActivePage={setActivePage} vulnerabilities={vulnerabilities} />;
+        return <Dashboard onFilterVulnerabilities={handleFilterVulnerabilities} vulnerabilities={vulnerabilities} />;
       case 'Vulnerabilities':
-        return <VulnerabilitiesView vulnerabilities={vulnerabilities} setVulnerabilities={setVulnerabilities} />;
+        return <VulnerabilitiesView 
+                  vulnerabilities={vulnerabilities} 
+                  setVulnerabilities={setVulnerabilities}
+                  filter={vulnerabilityFilter}
+                  setFilter={setVulnerabilityFilter}
+                />;
       case 'Integrations':
         return <IntegrationsView />;
       case 'Settings':
         return <SettingsView />;
       default:
-        return <Dashboard setActivePage={setActivePage} vulnerabilities={vulnerabilities}/>;
+        return <Dashboard onFilterVulnerabilities={handleFilterVulnerabilities} vulnerabilities={vulnerabilities}/>;
     }
   };
 
@@ -51,6 +67,7 @@ const App: React.FC = () => {
       <Sidebar
         activePage={activePage}
         setActivePage={setActivePage}
+        onNavigateToVulnerabilities={handleNavigateToVulnerabilities}
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
       />

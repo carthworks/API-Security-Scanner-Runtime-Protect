@@ -5,6 +5,7 @@ import { DashboardIcon, ShieldIcon, GitPullRequestIcon, SettingsIcon, ChevronLef
 interface SidebarProps {
   activePage: Page;
   setActivePage: (page: Page) => void;
+  onNavigateToVulnerabilities: () => void;
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
 }
@@ -34,9 +35,13 @@ const NavItem: React.FC<{
   </li>
 );
 
-export const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, isOpen, setIsOpen }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, onNavigateToVulnerabilities, isOpen, setIsOpen }) => {
   const handleNavClick = (page: Page) => {
-    setActivePage(page);
+    if (page === 'Vulnerabilities') {
+        onNavigateToVulnerabilities();
+    } else {
+        setActivePage(page);
+    }
     // Close sidebar on navigation in mobile view
     if (window.innerWidth < 1024) {
       setIsOpen(false);

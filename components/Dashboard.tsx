@@ -2,11 +2,11 @@ import React, { useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid } from 'recharts';
 import type { Page } from '../App';
 import { Severity, Vulnerability } from '../types';
-import { ChevronRightIcon, ServerIcon, ShieldIcon, AlertTriangleIcon, ZapIcon } from './Icons';
+import { ChevronRightIcon, ServerIcon, ShieldIcon, AlertTriangleIcon, ZapIcon, ArrowUpRightIcon, ArrowDownRightIcon } from './Icons';
 import { severityDotColor } from '../constants';
 
 interface DashboardProps {
-  setActivePage: (page: Page) => void;
+  onFilterVulnerabilities: (severity: Severity) => void;
   vulnerabilities: Vulnerability[];
 }
 
@@ -42,20 +42,38 @@ const trafficData = [
     { name: 'now', traffic: 3490, anomalies: 1 },
 ];
 
-const StatCard: React.FC<{title: string, value: string | number, icon: React.ReactNode, colorClass: string}> = ({title, value, icon, colorClass}) => (
-    <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 flex items-center space-x-4 transition-all duration-300 hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-600/10">
-        <div className={`p-3 rounded-full bg-gray-900/50 ${colorClass}`}>
-            {icon}
+const StatCard: React.FC<{
+    title: string; 
+    value: string | number; 
+    icon: React.ReactNode; 
+    colorClass: string;
+    trend: number;
+}> = ({title, value, icon, colorClass, trend}) => {
+    const isPositive = trend >= 0;
+    return (
+        <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 flex flex-col justify-between transition-all duration-300 hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-600/10">
+            <div className="flex items-center space-x-4">
+                <div className={`p-3 rounded-full bg-gray-900/50 ${colorClass}`}>
+                    {icon}
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-400">{title}</h3>
+                  <p className="mt-1 text-3xl font-semibold text-white">{value}</p>
+                </div>
+            </div>
+            <div className="mt-4 flex items-center text-sm">
+                <span className={`flex items-center font-semibold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                    {isPositive ? <ArrowUpRightIcon className="h-4 w-4 mr-1" /> : <ArrowDownRightIcon className="h-4 w-4 mr-1" />}
+                    {Math.abs(trend)}%
+                </span>
+                <span className="ml-2 text-gray-500">vs last week</span>
+            </div>
         </div>
-        <div>
-          <h3 className="text-sm font-medium text-gray-400">{title}</h3>
-          <p className="mt-1 text-3xl font-semibold text-white">{value}</p>
-        </div>
-    </div>
-);
+    );
+};
 
 
-export const Dashboard: React.FC<DashboardProps> = ({ setActivePage, vulnerabilities }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ onFilterVulnerabilities, vulnerabilities }) => {
   const vulnerabilityCounts = useMemo(() => {
     return vulnerabilities.reduce((acc, vuln) => {
       acc[vuln.severity] = (acc[vuln.severity] || 0) + 1;
@@ -71,6 +89,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActivePage, vulnerabili
   const totalVulnerabilities = vulnerabilities.length;
   const highSeverityCount = (vulnerabilityCounts[Severity.Critical] || 0) + (vulnerabilityCounts[Severity.High] || 0);
 
+  const handlePieClick = (data: any) => {
+    onFilterVulnerabilities(data.name);
+  };
+
   return (
     <div className="space-y-8">
       <div>
@@ -80,10 +102,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActivePage, vulnerabili
       
       {/* Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="APIs Monitored" value="12" icon={<ServerIcon className="h-6 w-6" />} colorClass="text-blue-400" />
-        <StatCard title="Total Vulnerabilities" value={totalVulnerabilities} icon={<ShieldIcon className="h-6 w-6" />} colorClass="text-purple-400" />
-        <StatCard title="Critical & High" value={highSeverityCount} icon={<AlertTriangleIcon className="h-6 w-6" />} colorClass="text-red-400" />
-        <StatCard title="Runtime Alerts (24h)" value="8" icon={<ZapIcon className="h-6 w-6" />} colorClass="text-yellow-400" />
+        <StatCard title="APIs Monitored" value="12" icon={<ServerIcon className="h-6 w-6" />} colorClass="text-blue-400" trend={0} />
+        <StatCard title="Total Vulnerabilities" value={totalVulnerabilities} icon={<ShieldIcon className="h-6 w-6" />} colorClass="text-purple-400" trend={-10} />
+        <StatCard title="Critical & High" value={highSeverityCount} icon={<AlertTriangleIcon className="h-6 w-6" />} colorClass="text-red-400" trend={15} />
+        <StatCard title="Runtime Alerts (24h)" value="8" icon={<ZapIcon className="h-6 w-6" />} colorClass="text-yellow-400" trend={-5} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -102,9 +124,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActivePage, vulnerabili
                 fill="#8884d8"
                 paddingAngle={5}
                 dataKey="value"
+                onClick={handlePieClick}
               >
                 {pieData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={severityColors[entry.name]} stroke={severityColors[entry.name]} />
+                  <Cell key={`cell-${index}`} fill={severityColors[entry.name]} stroke={severityColors[entry.name]} className="cursor-pointer transition-opacity hover:opacity-80" />
                 ))}
               </Pie>
               <Tooltip content={<CustomTooltip />} />
@@ -144,7 +167,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActivePage, vulnerabili
       <div className="bg-gray-800 rounded-lg border border-gray-700">
           <div className="flex justify-between items-center p-6 border-b border-gray-700">
               <h3 className="text-lg font-semibold text-white">Recent Vulnerabilities</h3>
-              <button onClick={() => setActivePage('Vulnerabilities')} className="text-sm font-medium text-indigo-400 hover:text-indigo-300 flex items-center">
+              <button onClick={() => onFilterVulnerabilities(null as any)} className="text-sm font-medium text-indigo-400 hover:text-indigo-300 flex items-center">
                   View All <ChevronRightIcon className="h-4 w-4 ml-1" />
               </button>
           </div>

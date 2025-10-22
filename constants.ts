@@ -1,111 +1,89 @@
 import { Severity, Vulnerability, VulnerabilityStatus } from './types';
 
-export const VULNERABILITIES: Vulnerability[] = [
-  {
-    id: 'vuln-001',
-    type: 'Broken Object Level Authorization',
-    owaspId: 'API1:2023',
-    description: 'An attacker is able to access user data belonging to another user by manipulating the object ID in the API request.',
-    severity: Severity.Critical,
-    status: VulnerabilityStatus.New,
-    statusHistory: [
-      { status: VulnerabilityStatus.New, timestamp: '2024-07-20T10:30:00Z' },
-    ],
-    endpoint: {
-      method: 'GET',
-      path: '/api/v1/users/{userId}/profile',
-    },
-    details: 'User with ID 123 was able to access the profile of user 456 by sending a GET request to /api/v1/users/456/profile. The API did not validate that the authenticated user (123) was authorized to view the requested profile (456).',
-    discoveredAt: '2024-07-20T10:30:00Z',
-  },
-  {
-    id: 'vuln-002',
-    type: 'Broken Authentication',
-    owaspId: 'API2:2023',
-    description: 'The password reset functionality is vulnerable to brute-force attacks due to lack of rate limiting.',
-    severity: Severity.High,
-    status: VulnerabilityStatus.New,
-    statusHistory: [
-      { status: VulnerabilityStatus.New, timestamp: '2024-07-19T14:00:00Z' },
-    ],
-    endpoint: {
-      method: 'POST',
-      path: '/api/v1/auth/reset-password',
-    },
-    details: 'The /api/v1/auth/reset-password endpoint does not implement rate limiting, allowing an attacker to make thousands of attempts to guess a reset token without being blocked.',
-    discoveredAt: '2024-07-19T14:00:00Z',
-  },
-  {
-    id: 'vuln-003',
-    type: 'Security Misconfiguration',
-    owaspId: 'API8:2023',
-    description: 'Verbose error messages reveal sensitive information about the underlying system architecture.',
-    severity: Severity.Medium,
-    status: VulnerabilityStatus.Acknowledged,
-    statusHistory: [
-      { status: VulnerabilityStatus.New, timestamp: '2024-07-18T09:15:00Z' },
-      { status: VulnerabilityStatus.Acknowledged, timestamp: '2024-07-19T11:00:00Z' },
-    ],
-    endpoint: {
-      method: 'POST',
-      path: '/api/v2/orders',
-    },
-    details: 'When submitting a malformed JSON payload to /api/v2/orders, the API returns a full stack trace, including framework versions, library names, and internal file paths. This information could be used by an attacker to identify other vulnerabilities.',
-    discoveredAt: '2024-07-18T09:15:00Z',
-  },
-  {
-    id: 'vuln-004',
-    type: 'Improper Inventory Management',
-    owaspId: 'API9:2023',
-    description: 'An outdated and vulnerable version of an API endpoint is still exposed to the public.',
-    severity: Severity.High,
-    status: VulnerabilityStatus.New,
-    statusHistory: [
-        { status: VulnerabilityStatus.New, timestamp: '2024-07-17T11:45:00Z' },
-    ],
-    endpoint: {
-      method: 'GET',
-      path: '/api/v1/products',
-    },
-    details: 'The endpoint /api/v1/products is still active, despite being replaced by /api/v2/products. The v1 endpoint uses a vulnerable dependency (log4j v2.14.0) that is no longer patched.',
-    discoveredAt: '2024-07-17T11:45:00Z',
-  },
-  {
-    id: 'vuln-005',
-    type: 'Server Side Request Forgery',
-    owaspId: 'API10:2023',
-    description: 'The API endpoint for importing data from a URL can be manipulated to make requests to internal services.',
-    severity: Severity.Critical,
-    status: VulnerabilityStatus.Fixed,
-    statusHistory: [
-        { status: VulnerabilityStatus.New, timestamp: '2024-07-16T18:00:00Z' },
-        { status: VulnerabilityStatus.Fixed, timestamp: '2024-07-17T09:30:00Z' },
-    ],
-    endpoint: {
-      method: 'POST',
-      path: '/api/v1/data/import',
-    },
-    details: 'The `source_url` parameter in the /api/v1/data/import request can be set to internal IP addresses (e.g., http://169.254.169.254/latest/meta-data), allowing an attacker to scan the internal network and access cloud provider metadata.',
-    discoveredAt: '2024-07-16T18:00:00Z',
-  },
-    {
-    id: 'vuln-006',
-    type: 'Broken Function Level Authorization',
-    owaspId: 'API5:2023',
-    description: 'Regular users can access admin-only functionality by directly calling the API endpoint.',
-    severity: Severity.High,
-    status: VulnerabilityStatus.New,
-    statusHistory: [
-        { status: VulnerabilityStatus.New, timestamp: '2024-07-21T08:00:00Z' },
-    ],
-    endpoint: {
-      method: 'POST',
-      path: '/api/v1/admin/users/create',
-    },
-    details: 'A non-admin user was able to successfully create a new user by sending a POST request to the /api/v1/admin/users/create endpoint. This endpoint should be restricted to users with the "admin" role.',
-    discoveredAt: '2024-07-21T08:00:00Z',
-  },
+// --- Helper Functions for Data Generation ---
+const getRandomElement = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+const getRandomDate = (start: Date, end: Date): Date => new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+
+// --- Data Pools for Realistic Generation ---
+const vulnerabilityTemplates = [
+  { type: 'Broken Object Level Authorization', owaspId: 'API1:2023', description: 'API does not properly validate that the user is authorized to access the requested object.' },
+  { type: 'Broken Authentication', owaspId: 'API2:2023', description: 'Authentication mechanisms are implemented incorrectly, allowing attackers to compromise authentication tokens or exploit implementation flaws.' },
+  { type: 'SQL Injection', owaspId: 'API3:2023', description: 'User-provided data is not validated, filtered, or sanitized by the application.' },
+  { type: 'Broken Function Level Authorization', owaspId: 'API5:2023', description: 'Policies and roles are not properly aligned with the business functions of the API.' },
+  { type: 'Security Misconfiguration', owaspId: 'API8:2023', description: 'Missing security hardening across any part of the application stack or improperly configured permissions.' },
+  { type: 'Improper Inventory Management', owaspId: 'API9:2023', description: 'The API hosts outdated versions or exposes debug endpoints that should not be public.' },
+  { type: 'Server Side Request Forgery', owaspId: 'API10:2023', description: 'A vulnerability that allows an attacker to induce the server-side application to make requests to an unintended location.' },
+  { type: 'Cross-Site Scripting (XSS)', owaspId: 'A03:2021', description: 'Untrusted data is sent to a web browser without proper validation and escaping.' },
 ];
+
+const apiEndpoints = [
+  { method: 'GET', path: '/api/v1/users/{userId}/orders' },
+  { method: 'POST', path: '/api/v2/payments/transaction' },
+  { method: 'GET', path: '/api/v1/products/search' },
+  { method: 'DELETE', path: '/api/v1/admin/users/{id}' },
+  { method: 'PATCH', path: '/api/v2/profiles/me' },
+  { method: 'POST', path: '/auth/v1/login' },
+  { method: 'GET', path: '/api/v1/inventory/{itemId}' },
+];
+
+export const teamMembers = ['Alice', 'Bob', 'Charlie', 'Dana', 'Eve'];
+
+/**
+ * Generates a specified number of mock vulnerability entries.
+ * @param count The number of vulnerabilities to generate.
+ * @returns An array of mock Vulnerability objects.
+ */
+export const generateMockVulnerabilities = (count: number): Vulnerability[] => {
+  const vulnerabilities: Vulnerability[] = [];
+  const severities = Object.values(Severity);
+  const statuses = Object.values(VulnerabilityStatus);
+
+  for (let i = 0; i < count; i++) {
+    const template = getRandomElement(vulnerabilityTemplates);
+    const severity = getRandomElement(severities);
+    const status = getRandomElement(statuses);
+    const endpoint = getRandomElement(apiEndpoints);
+    const discoveredAt = getRandomDate(new Date(2024, 0, 1), new Date());
+    
+    // Build a realistic status history
+    const statusHistory: { status: VulnerabilityStatus; timestamp: string }[] = [
+      { status: VulnerabilityStatus.New, timestamp: discoveredAt.toISOString() }
+    ];
+
+    if (status === VulnerabilityStatus.Acknowledged || status === VulnerabilityStatus.Fixed) {
+        const acknowledgedAt = new Date(discoveredAt.getTime() + 86400000 * (Math.random() * 5)); // 1-5 days later
+        statusHistory.push({ status: VulnerabilityStatus.Acknowledged, timestamp: acknowledgedAt.toISOString() });
+        
+        if (status === VulnerabilityStatus.Fixed) {
+            const fixedAt = new Date(acknowledgedAt.getTime() + 86400000 * (Math.random() * 10)); // 1-10 days later
+            statusHistory.push({ status: VulnerabilityStatus.Fixed, timestamp: fixedAt.toISOString() });
+        }
+    }
+
+    const assignee = Math.random() > 0.4 ? getRandomElement(teamMembers) : undefined;
+
+    const vulnerability: Vulnerability = {
+      id: `vuln-gen-${Date.now()}-${i}`,
+      type: template.type,
+      owaspId: template.owaspId,
+      description: template.description,
+      details: `A potential ${template.type} issue was detected on the ${endpoint.path} endpoint. Further investigation is required. This is a mock entry generated for demonstration purposes.`,
+      severity,
+      status,
+      statusHistory,
+      endpoint: endpoint as Vulnerability['endpoint'],
+      discoveredAt: discoveredAt.toISOString(),
+      assignee,
+    };
+    vulnerabilities.push(vulnerability);
+  }
+
+  // Sort by discovery date, newest first
+  return vulnerabilities.sort((a, b) => new Date(b.discoveredAt).getTime() - new Date(a.discoveredAt).getTime());
+};
+
+// Generate 50 mock vulnerabilities for the application to use
+export const VULNERABILITIES: Vulnerability[] = generateMockVulnerabilities(50);
 
 export const NEW_SCAN_FINDING: Omit<Vulnerability, 'id' | 'endpoint' | 'discoveredAt' | 'statusHistory'> = {
   type: 'SQL Injection',
@@ -114,6 +92,7 @@ export const NEW_SCAN_FINDING: Omit<Vulnerability, 'id' | 'endpoint' | 'discover
   severity: Severity.Critical,
   status: VulnerabilityStatus.New,
   details: 'The `q` query parameter in the specified search endpoint is directly concatenated into a SQL query. An attacker can provide a payload like `\' OR 1=1; --` to extract sensitive data.',
+  assignee: undefined,
 };
 
 export const severityConfig: { [key in Severity]: { color: string; bg: string } } = {
