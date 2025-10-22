@@ -1,0 +1,151 @@
+import React, { useState, useEffect } from 'react';
+import { Vulnerability, VulnerabilityStatus } from '../types';
+import { NEW_SCAN_FINDING } from '../constants';
+import { XIcon, CheckCircleIcon } from './Icons';
+
+interface NewScanModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onAddVulnerability: (vulnerability: Vulnerability) => void;
+}
+
+type ScanStep = 'form' | 'scanning' | 'complete';
+
+export const NewScanModal: React.FC<NewScanModalProps> = ({ isOpen, onClose, onAddVulnerability }) => {
+    const [scanStep, setScanStep] = useState<ScanStep>('form');
+    const [scanName, setScanName] = useState('Weekly Production Scan');
+    const [targetUrl, setTargetUrl] = useState('https://api.example.com/v2/products/search');
+    
+    useEffect(() => {
+        if (isOpen) {
+            // Reset state when modal is opened
+            setScanStep('form');
+        }
+    }, [isOpen]);
+
+    const handleStartScan = (e: React.FormEvent) => {
+        e.preventDefault();
+        setScanStep('scanning');
+        
+        // Simulate a scan that takes 3 seconds
+        setTimeout(() => {
+            const discoveredAt = new Date().toISOString();
+            const newVulnerability: Vulnerability = {
+                ...NEW_SCAN_FINDING,
+                id: `vuln-${Date.now()}`,
+                endpoint: {
+                    method: 'GET',
+                    path: new URL(targetUrl).pathname,
+                },
+                discoveredAt,
+                statusHistory: [
+                    { status: VulnerabilityStatus.New, timestamp: discoveredAt }
+                ],
+            };
+            onAddVulnerability(newVulnerability);
+            setScanStep('complete');
+        }, 3000);
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div className="fixed inset-0 bg-gray-900/80 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
+            
+            <div className="relative transform overflow-hidden rounded-lg bg-gray-800 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-gray-700">
+                <div className="bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold leading-6 text-white" id="modal-title">
+                            {scanStep === 'form' && 'Configure New Scan'}
+                            {scanStep === 'scanning' && 'Scanning In Progress'}
+                            {scanStep === 'complete' && 'Scan Complete'}
+                        </h3>
+                        <button onClick={onClose} className="text-gray-400 hover:text-white">
+                            <XIcon className="h-6 w-6" />
+                        </button>
+                    </div>
+
+                    {scanStep === 'form' && (
+                        <form onSubmit={handleStartScan} className="space-y-4">
+                             <div>
+                                <label htmlFor="scan-name" className="block text-sm font-medium text-gray-300">Scan Name</label>
+                                <input 
+                                    type="text" 
+                                    id="scan-name" 
+                                    value={scanName}
+                                    onChange={(e) => setScanName(e.target.value)}
+                                    className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2"
+                                />
+                            </div>
+                            <div>
+                                <label htmlFor="target-url" className="block text-sm font-medium text-gray-300">Target URL</label>
+                                <input 
+                                    type="url" 
+                                    id="target-url" 
+                                    value={targetUrl}
+                                    onChange={(e) => setTargetUrl(e.target.value)}
+                                    className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2"
+                                    placeholder="https://api.example.com/v1"
+                                    required
+                                />
+                            </div>
+                        </form>
+                    )}
+
+                    {scanStep === 'scanning' && (
+                        <div className="text-center py-8">
+                            <div className="flex justify-center items-center mb-4">
+                               <svg className="animate-spin h-10 w-10 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </div>
+                            <p className="text-white">Scanning {targetUrl}...</p>
+                            <p className="text-sm text-gray-400">This will take a moment.</p>
+                        </div>
+                    )}
+
+                    {scanStep === 'complete' && (
+                        <div className="text-center py-8">
+                            <div className="flex justify-center items-center mb-4">
+                                <CheckCircleIcon className="h-12 w-12 text-green-400" />
+                            </div>
+                            <p className="text-lg font-medium text-white">Scan finished successfully!</p>
+                            <p className="text-sm text-gray-400">A new critical vulnerability was found and added to the list.</p>
+                        </div>
+                    )}
+                </div>
+
+                <div className="bg-gray-800 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 border-t border-gray-700">
+                    {scanStep === 'form' && (
+                        <button
+                            type="submit"
+                            onClick={handleStartScan}
+                            disabled={!scanName || !targetUrl}
+                            className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 sm:ml-3 sm:w-auto disabled:bg-indigo-800 disabled:cursor-not-allowed"
+                        >
+                            Start Scan
+                        </button>
+                    )}
+                     {scanStep === 'complete' && (
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 sm:ml-3 sm:w-auto"
+                        >
+                            View Results
+                        </button>
+                    )}
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="mt-3 inline-flex w-full justify-center rounded-md bg-gray-700 px-3 py-2 text-sm font-semibold text-gray-200 shadow-sm ring-1 ring-inset ring-gray-600 hover:bg-gray-600 sm:mt-0 sm:w-auto"
+                    >
+                        {scanStep === 'complete' ? 'Close' : 'Cancel'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};

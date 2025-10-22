@@ -1,0 +1,5 @@
+{
+  "name": "Sentinel API Security Scanner",
+  "description": "A developer-centric SaaS platform that scans APIs for vulnerabilities, monitors live traffic for anomalies, and provides actionable, AI-powered remediation suggestions.",
+  "requestFramePermissions": []
+}
