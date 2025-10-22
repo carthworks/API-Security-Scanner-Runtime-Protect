@@ -94,7 +94,9 @@ Keep the response concise and focused on actionable intelligence for a developer
         const summary = response.text;
         
         const cveRegex = /(CVE-\d{4}-\d{4,})/g;
-        const foundCves = summary.match(cveRegex) || [];
+        // FIX: Add an explicit type annotation to prevent potential type inference issues
+        // with RegExpMatchArray in strict environments.
+        const foundCves: string[] = summary.match(cveRegex) || [];
         const uniqueCves = [...new Set(foundCves)];
         
         const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
@@ -158,7 +160,7 @@ export const getCveDetails = async (cveId: string): Promise<CveDetails> => {
             },
         });
 
-        // FIX: The type of `JSON.parse` is `any`, which can lead to type mismatches
+        // The type of `JSON.parse` is `any`, which can lead to type mismatches
         // in strict TypeScript environments (e.g., assigning `any[]` to `string[]`).
         // We explicitly cast the parsed object to `CveDetails` to align with the
         // expected response shape defined in `responseSchema`.

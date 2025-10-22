@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid } from 'recharts';
 import type { Page } from '../App';
 import { Severity, Vulnerability } from '../types';
-import { ChevronRightIcon, ServerIcon, ShieldIcon, AlertTriangleIcon, ZapIcon, ArrowUpRightIcon, ArrowDownRightIcon } from './Icons';
+import { ChevronRightIcon, ServerIcon, ShieldIcon, AlertTriangleIcon, ZapIcon, ArrowUpRightIcon, ArrowDownRightIcon, GitPullRequestIcon, CodeIcon } from './Icons';
 import { severityDotColor } from '../constants';
 
 interface DashboardProps {
@@ -72,6 +72,24 @@ const StatCard: React.FC<{
     );
 };
 
+const keyFeatures = [
+    {
+        icon: <GitPullRequestIcon className="h-6 w-6 text-indigo-400" />,
+        text: 'Scans APIs during build/deploy stages (GitHub/GitLab/Bitbucket integration).',
+    },
+    {
+        icon: <ShieldIcon className="h-6 w-6 text-indigo-400" />,
+        text: 'Detects vulnerabilities mapped to OWASP API Top 10.',
+    },
+    {
+        icon: <ZapIcon className="h-6 w-6 text-indigo-400" />,
+        text: 'Deploys a lightweight runtime agent that observes live traffic for anomalies, authentication flaws, and injection attempts.',
+    },
+    {
+        icon: <CodeIcon className="h-6 w-6 text-indigo-400" />,
+        text: 'Provides actionable fixes with code-level remediation suggestions.',
+    },
+];
 
 export const Dashboard: React.FC<DashboardProps> = ({ onFilterVulnerabilities, vulnerabilities }) => {
   const vulnerabilityCounts = useMemo(() => {
@@ -163,44 +181,58 @@ export const Dashboard: React.FC<DashboardProps> = ({ onFilterVulnerabilities, v
         </div>
       </div>
       
-      {/* Recent Activity */}
-      <div className="bg-gray-800 rounded-lg border border-gray-700">
-          <div className="flex justify-between items-center p-6 border-b border-gray-700">
-              <h3 className="text-lg font-semibold text-white">Recent Vulnerabilities</h3>
-              <button onClick={() => onFilterVulnerabilities(null as any)} className="text-sm font-medium text-indigo-400 hover:text-indigo-300 flex items-center">
-                  View All <ChevronRightIcon className="h-4 w-4 ml-1" />
-              </button>
-          </div>
-          <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                  <thead className="text-xs text-gray-400 uppercase">
-                      <tr>
-                          <th className="py-3 px-6">Severity</th>
-                          <th className="py-3 px-6">Type</th>
-                          <th className="py-3 px-6">Endpoint</th>
-                          <th className="py-3 px-6">Discovered</th>
-                      </tr>
-                  </thead>
-                  <tbody>
-                      {vulnerabilities.slice(0, 4).map(vuln => (
-                          <tr key={vuln.id} className="border-t border-gray-700 hover:bg-gray-700/50">
-                              <td className="py-4 px-6">
-                                <div className="flex items-center">
-                                    <span className={`h-2.5 w-2.5 rounded-full mr-2 ${severityDotColor[vuln.severity]}`}></span>
-                                    <span style={{color: severityColors[vuln.severity]}} className="font-semibold">{vuln.severity}</span>
-                                </div>
-                              </td>
-                              <td className="py-4 px-6 font-medium text-white">{vuln.type}</td>
-                              <td className="py-4 px-6 text-gray-300 font-mono text-sm">
-                                  <span className={`font-bold text-xs mr-2 ${vuln.endpoint.method === 'POST' ? 'text-green-400' : 'text-blue-400'}`}>{vuln.endpoint.method}</span>
-                                  {vuln.endpoint.path}
-                              </td>
-                              <td className="py-4 px-6 text-gray-400">{new Date(vuln.discoveredAt).toLocaleDateString()}</td>
-                          </tr>
-                      ))}
-                  </tbody>
-              </table>
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Vulnerabilities */}
+        <div className="bg-gray-800 rounded-lg border border-gray-700">
+            <div className="flex justify-between items-center p-6 border-b border-gray-700">
+                <h3 className="text-lg font-semibold text-white">Recent Vulnerabilities</h3>
+                <button onClick={() => onFilterVulnerabilities(null as any)} className="text-sm font-medium text-indigo-400 hover:text-indigo-300 flex items-center">
+                    View All <ChevronRightIcon className="h-4 w-4 ml-1" />
+                </button>
+            </div>
+            <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                    <thead className="text-xs text-gray-400 uppercase">
+                        <tr>
+                            <th className="py-3 px-6">Severity</th>
+                            <th className="py-3 px-6">Type</th>
+                            <th className="py-3 px-6">Endpoint</th>
+                            <th className="py-3 px-6">Discovered</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {vulnerabilities.slice(0, 4).map(vuln => (
+                            <tr key={vuln.id} className="border-t border-gray-700 hover:bg-gray-700/50">
+                                <td className="py-4 px-6">
+                                  <div className="flex items-center">
+                                      <span className={`h-2.5 w-2.5 rounded-full mr-2 ${severityDotColor[vuln.severity]}`}></span>
+                                      <span style={{color: severityColors[vuln.severity]}} className="font-semibold">{vuln.severity}</span>
+                                  </div>
+                                </td>
+                                <td className="py-4 px-6 font-medium text-white">{vuln.type}</td>
+                                <td className="py-4 px-6 text-gray-300 font-mono text-sm">
+                                    <span className={`font-bold text-xs mr-2 ${vuln.endpoint.method === 'POST' ? 'text-green-400' : 'text-blue-400'}`}>{vuln.endpoint.method}</span>
+                                    {vuln.endpoint.path}
+                                </td>
+                                <td className="py-4 px-6 text-gray-400">{new Date(vuln.discoveredAt).toLocaleDateString()}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {/* Key Features */}
+        <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
+            <h3 className="text-lg font-semibold text-white border-b border-gray-700 pb-4">Key Features</h3>
+            <ul className="mt-4 space-y-4">
+                {keyFeatures.map((feature, index) => (
+                    <li key={index} className="flex items-start">
+                        <div className="flex-shrink-0 mt-1">{feature.icon}</div>
+                        <p className="ml-4 text-sm text-gray-300">{feature.text}</p>
+                    </li>
+                ))}
+            </ul>
+        </div>
       </div>
     </div>
   );
