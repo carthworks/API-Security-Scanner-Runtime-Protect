@@ -6,7 +6,7 @@ import { VulnerabilitiesView } from './components/VulnerabilitiesView';
 import { IntegrationsView } from './components/IntegrationsView';
 import { SettingsView } from './components/SettingsView';
 import { NewScanModal } from './components/NewScanModal';
-import { VULNERABILITIES } from './constants';
+import { generateMockVulnerabilities, INITIAL_TEAM_MEMBERS } from './constants';
 import type { Vulnerability, Severity } from './types';
 
 export type Page = 'Dashboard' | 'Vulnerabilities' | 'Integrations' | 'Settings';
@@ -14,7 +14,8 @@ export type Page = 'Dashboard' | 'Vulnerabilities' | 'Integrations' | 'Settings'
 const App: React.FC = () => {
   const [activePage, setActivePage] = useState<Page>('Dashboard');
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
-  const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>(VULNERABILITIES);
+  const [teamMembers, setTeamMembers] = useState<string[]>(INITIAL_TEAM_MEMBERS);
+  const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>(() => generateMockVulnerabilities(50, teamMembers));
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [vulnerabilityFilter, setVulnerabilityFilter] = useState<Severity | null>(null);
 
@@ -44,11 +45,12 @@ const App: React.FC = () => {
                   setVulnerabilities={setVulnerabilities}
                   filter={vulnerabilityFilter}
                   setFilter={setVulnerabilityFilter}
+                  teamMembers={teamMembers}
                 />;
       case 'Integrations':
         return <IntegrationsView />;
       case 'Settings':
-        return <SettingsView />;
+        return <SettingsView teamMembers={teamMembers} setTeamMembers={setTeamMembers} />;
       default:
         return <Dashboard onFilterVulnerabilities={handleFilterVulnerabilities} vulnerabilities={vulnerabilities}/>;
     }

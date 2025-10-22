@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid } from 'recharts';
+import React, { useMemo, useState, useEffect } from 'react';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid, LineChart, Line } from 'recharts';
 import type { Page } from '../App';
 import { Severity, Vulnerability } from '../types';
 import { ChevronRightIcon, ServerIcon, ShieldIcon, AlertTriangleIcon, ZapIcon, ArrowUpRightIcon, ArrowDownRightIcon, GitPullRequestIcon, CodeIcon } from './Icons';
@@ -91,6 +91,60 @@ const keyFeatures = [
     },
 ];
 
+const LiveMetricCard: React.FC<{
+    title: string;
+    initialValue: number;
+    range: [number, number];
+    isAnomaly?: boolean;
+    dataColor: string;
+}> = ({ title, initialValue, range, isAnomaly = false, dataColor }) => {
+    const [currentValue, setCurrentValue] = useState(initialValue);
+    const [data, setData] = useState(() => Array(20).fill({ value: initialValue }));
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            let newValue;
+            if (isAnomaly) {
+                // Skew towards zero for anomalies
+                newValue = Math.random() < 0.8 ? 0 : Math.floor(Math.random() * (range[1] - range[0] + 1)) + range[0];
+            } else {
+                newValue = Math.floor(Math.random() * (range[1] - range[0] + 1)) + range[0];
+            }
+            setCurrentValue(newValue);
+            setData(prevData => [...prevData.slice(1), { value: newValue }]);
+        }, 3000); // Update every 3 seconds
+
+        return () => clearInterval(interval);
+    }, [range, isAnomaly]);
+
+    const getStatus = () => {
+        if (!isAnomaly) return null;
+        if (currentValue === 0) return { text: "Normal", color: "text-green-400" };
+        if (currentValue > 0 && currentValue <= 3) return { text: "Warning", color: "text-yellow-400" };
+        return { text: "Critical", color: "text-red-400" };
+    };
+
+    const status = getStatus();
+
+    return (
+        <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 flex flex-col">
+            <div className="flex justify-between items-center">
+                <h3 className="text-sm font-medium text-gray-400">{title}</h3>
+                {status && <span className={`text-sm font-bold ${status.color}`}>{status.text}</span>}
+            </div>
+            <p className="text-4xl font-semibold text-white mt-2">{currentValue.toLocaleString()}</p>
+            <div className="flex-grow mt-4 h-20">
+                <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={data}>
+                        <Line type="monotone" dataKey="value" stroke={dataColor} strokeWidth={2} dot={false} isAnimationActive={false} />
+                    </LineChart>
+                </ResponsiveContainer>
+            </div>
+        </div>
+    );
+};
+
+
 export const Dashboard: React.FC<DashboardProps> = ({ onFilterVulnerabilities, vulnerabilities }) => {
   const vulnerabilityCounts = useMemo(() => {
     return vulnerabilities.reduce((acc, vuln) => {
@@ -126,6 +180,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onFilterVulnerabilities, v
         <StatCard title="Runtime Alerts (24h)" value="8" icon={<ZapIcon className="h-6 w-6" />} colorClass="text-yellow-400" trend={-5} />
       </div>
 
+      {/* Live Traffic Monitoring */}
+      <div className="bg-gray-800/50 p-6 rounded-lg border border-gray-700">
+          <h2 className="text-lg font-semibold text-white mb-4">Live Traffic Monitoring</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <LiveMetricCard title="Requests per Minute" initialValue={2150} range={[1800, 2500]} dataColor="#8884d8" />
+              <LiveMetricCard title="Anomalies Detected" initialValue={0} range={[0, 5]} dataColor="#ef4444" isAnomaly />
+          </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Vulnerability Breakdown */}
         <div className="lg:col-span-1 bg-gray-800 p-6 rounded-lg border border-gray-700 h-96 flex flex-col">
@@ -156,7 +219,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onFilterVulnerabilities, v
         
         {/* Runtime Traffic */}
         <div className="lg:col-span-2 bg-gray-800 p-6 rounded-lg border border-gray-700 h-96 flex flex-col">
-            <h3 className="text-lg font-semibold text-white mb-4">Live API Traffic</h3>
+            <h3 className="text-lg font-semibold text-white mb-4">Live API Traffic (Detailed)</h3>
             <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={trafficData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
                      <defs>

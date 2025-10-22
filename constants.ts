@@ -26,14 +26,15 @@ const apiEndpoints = [
   { method: 'GET', path: '/api/v1/inventory/{itemId}' },
 ];
 
-export const teamMembers = ['Alice', 'Bob', 'Charlie', 'Dana', 'Eve'];
+export const INITIAL_TEAM_MEMBERS = ['Alice', 'Bob', 'Charlie', 'Dana', 'Eve'];
 
 /**
  * Generates a specified number of mock vulnerability entries.
  * @param count The number of vulnerabilities to generate.
+ * @param teamMembers The list of team members to assign vulnerabilities to.
  * @returns An array of mock Vulnerability objects.
  */
-export const generateMockVulnerabilities = (count: number): Vulnerability[] => {
+export const generateMockVulnerabilities = (count: number, teamMembers: string[]): Vulnerability[] => {
   const vulnerabilities: Vulnerability[] = [];
   const severities = Object.values(Severity);
   const statuses = Object.values(VulnerabilityStatus);
@@ -60,7 +61,7 @@ export const generateMockVulnerabilities = (count: number): Vulnerability[] => {
         }
     }
 
-    const assignee = Math.random() > 0.4 ? getRandomElement(teamMembers) : undefined;
+    const assignee = Math.random() > 0.4 && teamMembers.length > 0 ? getRandomElement(teamMembers) : undefined;
 
     const vulnerability: Vulnerability = {
       id: `vuln-gen-${Date.now()}-${i}`,
@@ -81,9 +82,6 @@ export const generateMockVulnerabilities = (count: number): Vulnerability[] => {
   // Sort by discovery date, newest first
   return vulnerabilities.sort((a, b) => new Date(b.discoveredAt).getTime() - new Date(a.discoveredAt).getTime());
 };
-
-// Generate 50 mock vulnerabilities for the application to use
-export const VULNERABILITIES: Vulnerability[] = generateMockVulnerabilities(50);
 
 export const NEW_SCAN_FINDING: Omit<Vulnerability, 'id' | 'endpoint' | 'discoveredAt' | 'statusHistory'> = {
   type: 'SQL Injection',

@@ -1,8 +1,8 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Severity, Vulnerability, VulnerabilityStatus } from '../types';
 import { getRemediation, getRelatedCVEs, CveInfo, getCveDetails, CveDetails } from '../services/geminiService';
-import { severityConfig, severityDotColor, statusConfig, statusTimelineDotColor, teamMembers } from '../constants';
-import { ChevronRightIcon, ChevronDownIcon, ExternalLinkIcon, XCircleIcon } from './Icons';
+import { severityConfig, severityDotColor, statusConfig, statusTimelineDotColor } from '../constants';
+import { ChevronRightIcon, ChevronDownIcon, ExternalLinkIcon, XCircleIcon, SearchIcon, FilterIcon } from './Icons';
 
 const AssigneeAvatar: React.FC<{ name?: string }> = ({ name }) => {
     if (!name) {
@@ -88,11 +88,19 @@ const VulnerabilityListItem: React.FC<{
     );
 };
 
+const getCvssSeverity = (score: number): { text: string; bg: string; border: string } => {
+    if (score >= 9.0) return { text: 'text-red-300', bg: 'bg-red-500/20', border: 'border-red-500/30' };
+    if (score >= 7.0) return { text: 'text-orange-300', bg: 'bg-orange-500/20', border: 'border-orange-500/30' };
+    if (score >= 4.0) return { text: 'text-yellow-300', bg: 'bg-yellow-500/20', border: 'border-yellow-500/30' };
+    return { text: 'text-blue-300', bg: 'bg-blue-500/20', border: 'border-blue-500/30' };
+};
+
 const VulnerabilityDetail: React.FC<{ 
     vulnerability: Vulnerability; 
     onStatusChange: (id: string, newStatus: VulnerabilityStatus) => void; 
     onAssigneeChange: (id: string, newAssignee?: string) => void;
-}> = ({ vulnerability, onStatusChange, onAssigneeChange }) => {
+    teamMembers: string[];
+}> = ({ vulnerability, onStatusChange, onAssigneeChange, teamMembers }) => {
     const [remediation, setRemediation] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -311,11 +319,15 @@ const VulnerabilityDetail: React.FC<{
                                                         {isCveDetailsLoading && <p className="text-sm text-gray-400">Loading details...</p>}
                                                         {cveDetailsError && <p className="text-sm text-red-500">{cveDetailsError}</p>}
                                                         {cveDetails && (
-                                                            <div className="space-y-3 text-sm text-gray-300">
-                                                                <div>
-                                                                    <strong className="text-gray-200">CVSS Score:</strong> 
-                                                                    <span className="font-bold text-yellow-400 ml-2">{cveDetails.cvss.score}</span>
-                                                                    <span className="text-gray-500 ml-2 font-mono text-xs">{cveDetails.cvss.vector}</span>
+                                                            <div className="space-y-4 text-sm text-gray-300">
+                                                                <div className="flex items-center gap-4 flex-wrap">
+                                                                    <strong className="text-gray-200 flex-shrink-0">CVSS Score:</strong>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className={`px-2.5 py-1 rounded-full text-sm font-bold border ${getCvssSeverity(cveDetails.cvss.score).bg} ${getCvssSeverity(cveDetails.cvss.score).text} ${getCvssSeverity(cveDetails.cvss.score).border}`}>
+                                                                            {cveDetails.cvss.score.toFixed(1)}
+                                                                        </span>
+                                                                        <span className="text-gray-500 font-mono text-xs truncate">{cveDetails.cvss.vector}</span>
+                                                                    </div>
                                                                 </div>
                                                                 <div>
                                                                     <strong className="text-gray-200">Description:</strong>
@@ -323,7 +335,9 @@ const VulnerabilityDetail: React.FC<{
                                                                 </div>
                                                                 <div>
                                                                     <strong className="text-gray-200">Affected Software:</strong>
-                                                                    <p className="text-gray-400 mt-1">{cveDetails.affected}</p>
+                                                                    <div className="mt-2 p-3 bg-gray-900/70 rounded-md border border-gray-700">
+                                                                        <p className="text-gray-300 whitespace-pre-wrap font-mono text-xs">{cveDetails.affected}</p>
+                                                                    </div>
                                                                 </div>
                                                                 {cveDetails.references?.length > 0 && (
                                                                     <div>
@@ -373,21 +387,67 @@ interface VulnerabilitiesViewProps {
     setVulnerabilities: React.Dispatch<React.SetStateAction<Vulnerability[]>>;
     filter: Severity | null;
     setFilter: (filter: Severity | null) => void;
+    teamMembers: string[];
 }
 
-export const VulnerabilitiesView: React.FC<VulnerabilitiesViewProps> = ({ vulnerabilities, setVulnerabilities, filter, setFilter }) => {
-  const filteredVulnerabilities = filter 
-      ? vulnerabilities.filter(v => v.severity === filter)
-      : vulnerabilities;
-
+export const VulnerabilitiesView: React.FC<VulnerabilitiesViewProps> = ({ vulnerabilities, setVulnerabilities, filter, setFilter, teamMembers }) => {
   const [selectedVulnerabilityId, setSelectedVulnerabilityId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<VulnerabilityStatus | 'All'>('All');
+  const [sortBy, setSortBy] = useState('discoveredAt-desc');
+
+  const processedVulnerabilities = useMemo(() => {
+    let results = [...vulnerabilities];
+
+    // --- Filtering ---
+    if (filter) {
+        results = results.filter(v => v.severity === filter);
+    }
+
+    if (statusFilter !== 'All') {
+        results = results.filter(v => v.status === statusFilter);
+    }
+
+    if (searchQuery) {
+        const lowerCaseQuery = searchQuery.toLowerCase();
+        results = results.filter(v => 
+            v.type.toLowerCase().includes(lowerCaseQuery) ||
+            v.owaspId.toLowerCase().includes(lowerCaseQuery) ||
+            v.description.toLowerCase().includes(lowerCaseQuery) ||
+            v.endpoint.path.toLowerCase().includes(lowerCaseQuery)
+        );
+    }
+
+    // --- Sorting ---
+    const [sortKey, sortDirection] = sortBy.split('-');
+    const severityOrder = Object.values(Severity);
+
+    results.sort((a, b) => {
+        let comparison = 0;
+        switch (sortKey) {
+            case 'discoveredAt':
+                comparison = new Date(a.discoveredAt).getTime() - new Date(b.discoveredAt).getTime();
+                break;
+            case 'severity':
+                comparison = severityOrder.indexOf(a.severity) - severityOrder.indexOf(b.severity);
+                break;
+            case 'assignee':
+                if (!a.assignee) return 1; // Unassigned to the end
+                if (!b.assignee) return -1;
+                comparison = a.assignee.localeCompare(b.assignee);
+                break;
+        }
+        return sortDirection === 'desc' ? -comparison : comparison;
+    });
+
+    return results;
+  }, [vulnerabilities, filter, statusFilter, searchQuery, sortBy]);
 
   useEffect(() => {
-    // If there's a filter, select the first item of the filtered list.
-    // Otherwise, select the first item of the full list.
-    const newSelection = filteredVulnerabilities[0]?.id || null;
+    // If there's a filter or search, select the first item of the filtered list.
+    const newSelection = processedVulnerabilities[0]?.id || null;
     setSelectedVulnerabilityId(newSelection);
-  }, [filter, vulnerabilities]); // Rerun when filter or the main list changes
+  }, [processedVulnerabilities]);
 
   const selectedVulnerability = vulnerabilities.find(v => v.id === selectedVulnerabilityId);
 
@@ -422,21 +482,73 @@ export const VulnerabilitiesView: React.FC<VulnerabilitiesViewProps> = ({ vulner
 
   return (
     <div className="flex flex-col h-full">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
             <h1 className="text-3xl font-bold text-white">Vulnerabilities</h1>
-            {filter && (
-                <div className={`flex items-center px-3 py-1 rounded-full text-sm font-semibold ${severityConfig[filter].bg} ${severityConfig[filter].color}`}>
-                    <span>Filtering by: <span className="font-bold">{filter}</span></span>
-                    <button onClick={() => setFilter(null)} className="ml-2 hover:bg-white/20 rounded-full p-0.5">
-                        <XCircleIcon className="h-5 w-5" />
-                    </button>
+            <div className="flex items-center gap-4">
+                <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <SearchIcon className="h-5 w-5 text-gray-500" />
+                    </span>
+                    <input
+                        type="text"
+                        placeholder="Search..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full sm:w-48 pl-10 pr-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
                 </div>
-            )}
+                 {filter && (
+                    <div className={`flex items-center px-3 py-1 rounded-full text-sm font-semibold ${severityConfig[filter].bg} ${severityConfig[filter].color}`}>
+                        <span>Filtering by: <span className="font-bold">{filter}</span></span>
+                        <button onClick={() => setFilter(null)} className="ml-2 hover:bg-white/20 rounded-full p-0.5">
+                            <XCircleIcon className="h-5 w-5" />
+                        </button>
+                    </div>
+                )}
+            </div>
         </div>
+        
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-4 p-2 bg-gray-800/50 rounded-lg border border-gray-700">
+            <div className="flex items-center gap-4">
+                <div className="flex items-center">
+                    <FilterIcon className="h-5 w-5 text-gray-400 mr-2"/>
+                    <label htmlFor="status-filter" className="text-sm font-medium text-gray-300 mr-2">Status:</label>
+                    <select
+                        id="status-filter"
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value as any)}
+                        className="rounded-md bg-gray-700 border-transparent text-white focus:border-indigo-500 focus:ring-indigo-500 text-sm py-1"
+                    >
+                        <option value="All">All</option>
+                        {Object.values(VulnerabilityStatus).map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                </div>
+                 <div className="flex items-center">
+                    <label htmlFor="sort-by" className="text-sm font-medium text-gray-300 mr-2">Sort by:</label>
+                    <select
+                        id="sort-by"
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="rounded-md bg-gray-700 border-transparent text-white focus:border-indigo-500 focus:ring-indigo-500 text-sm py-1"
+                    >
+                        <option value="discoveredAt-desc">Newest</option>
+                        <option value="discoveredAt-asc">Oldest</option>
+                        <option value="severity-desc">Severity (High-Low)</option>
+                        <option value="severity-asc">Severity (Low-High)</option>
+                        <option value="assignee-asc">Assignee (A-Z)</option>
+                        <option value="assignee-desc">Assignee (Z-A)</option>
+                    </select>
+                </div>
+            </div>
+            <div className="text-sm text-gray-400">
+                Showing <span className="font-semibold text-white">{processedVulnerabilities.length}</span> of {vulnerabilities.length} vulnerabilities
+            </div>
+        </div>
+
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 overflow-hidden">
             <div className="lg:col-span-1 h-full overflow-y-auto pr-2">
                 <ul className="space-y-3">
-                    {filteredVulnerabilities.map(v => (
+                    {processedVulnerabilities.map(v => (
                         <VulnerabilityListItem 
                             key={v.id}
                             vulnerability={v}
@@ -445,6 +557,12 @@ export const VulnerabilitiesView: React.FC<VulnerabilitiesViewProps> = ({ vulner
                             onStatusChange={(newStatus) => handleStatusChange(v.id, newStatus)}
                         />
                     ))}
+                    {processedVulnerabilities.length === 0 && (
+                        <div className="text-center py-10 text-gray-500">
+                           <p>No vulnerabilities found.</p>
+                           {searchQuery && <p className="text-sm">Try adjusting your search or filters.</p>}
+                        </div>
+                    )}
                 </ul>
             </div>
             <div className="lg:col-span-2 h-full overflow-hidden">
@@ -453,10 +571,11 @@ export const VulnerabilitiesView: React.FC<VulnerabilitiesViewProps> = ({ vulner
                         vulnerability={selectedVulnerability} 
                         onStatusChange={handleStatusChange} 
                         onAssigneeChange={handleAssigneeChange}
+                        teamMembers={teamMembers}
                     />
                 ) : (
                     <div className="flex items-center justify-center h-full bg-gray-800 rounded-lg text-gray-500">
-                        {vulnerabilities.length > 0 ? (filter ? 'No vulnerabilities match the current filter.' : 'Select a vulnerability to see details.') : 'No vulnerabilities found. Run a new scan to get started.'}
+                        {vulnerabilities.length > 0 ? (filter || searchQuery || statusFilter !== 'All' ? 'No vulnerabilities match the current criteria.' : 'Select a vulnerability to see details.') : 'No vulnerabilities found. Run a new scan to get started.'}
                     </div>
                 )}
             </div>

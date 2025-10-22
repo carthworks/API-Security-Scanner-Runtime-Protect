@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Vulnerability, VulnerabilityStatus, Severity } from '../types';
-import { NEW_SCAN_FINDING } from '../constants';
+import { NEW_SCAN_FINDING, severityConfig } from '../constants';
 import { XIcon, CheckCircleIcon, ChevronDownIcon } from './Icons';
 
 interface NewScanModalProps {
@@ -10,6 +10,11 @@ interface NewScanModalProps {
 }
 
 type ScanStep = 'form' | 'scanning' | 'complete';
+interface ScanSummary {
+    vulnerabilitiesFound: number;
+    highestSeverity: Severity;
+    endpointsScanned: number;
+}
 
 export const NewScanModal: React.FC<NewScanModalProps> = ({ isOpen, onClose, onAddVulnerability }) => {
     const [scanStep, setScanStep] = useState<ScanStep>('form');
@@ -24,12 +29,14 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({ isOpen, onClose, onA
     const [includeRegex, setIncludeRegex] = useState('');
     const [excludeRegex, setExcludeRegex] = useState('/api/v1/health');
     const [minSeverity, setMinSeverity] = useState<Severity>(Severity.Low);
+    const [scanSummary, setScanSummary] = useState<ScanSummary | null>(null);
 
     useEffect(() => {
         if (isOpen) {
             // Reset state when modal is opened
             setScanStep('form');
             setShowAdvanced(false);
+            setScanSummary(null);
         }
     }, [isOpen]);
 
@@ -53,6 +60,15 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({ isOpen, onClose, onA
                 ],
                 assignee: undefined,
             };
+
+            // Create and set the scan summary
+            const summary = {
+                vulnerabilitiesFound: 1, // We always find one in this simulation
+                highestSeverity: NEW_SCAN_FINDING.severity,
+                endpointsScanned: Math.floor(Math.random() * 50) + 10, // Random number between 10 and 60
+            };
+            setScanSummary(summary);
+            
             onAddVulnerability(newVulnerability);
             setScanStep('complete');
         }, 3000);
@@ -149,12 +165,35 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({ isOpen, onClose, onA
                     )}
 
                     {scanStep === 'complete' && (
-                        <div className="text-center py-8">
-                            <div className="flex justify-center items-center mb-4">
-                                <CheckCircleIcon className="h-12 w-12 text-green-400" />
+                        <div>
+                            <div className="text-center py-8">
+                                <div className="flex justify-center items-center mb-4">
+                                    <CheckCircleIcon className="h-12 w-12 text-green-400" />
+                                </div>
+                                <p className="text-lg font-medium text-white">Scan finished successfully!</p>
+                                <p className="text-sm text-gray-400">The results have been added to the main list.</p>
                             </div>
-                            <p className="text-lg font-medium text-white">Scan finished successfully!</p>
-                            <p className="text-sm text-gray-400">A new critical vulnerability was found and added to the list.</p>
+                            {scanSummary && (
+                                <div className="mt-2 mb-4">
+                                    <h4 className="text-md font-semibold text-white mb-3 text-center">Scan Summary</h4>
+                                    <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700 space-y-3 text-sm">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-gray-400">Endpoints Scanned:</span>
+                                            <span className="font-semibold text-white">{scanSummary.endpointsScanned}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-gray-400">Vulnerabilities Found:</span>
+                                            <span className="font-semibold text-white">{scanSummary.vulnerabilitiesFound}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-gray-400">Highest Severity Detected:</span>
+                                            <span className={`font-semibold ${severityConfig[scanSummary.highestSeverity].color}`}>
+                                                {scanSummary.highestSeverity}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
