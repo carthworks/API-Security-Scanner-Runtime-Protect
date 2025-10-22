@@ -144,7 +144,6 @@ export const getCveDetails = async (cveId: string): Promise<CveDetails> => {
                                 score: { type: Type.NUMBER, description: "The base CVSS score, e.g., 9.8" },
                                 vector: { type: Type.STRING, description: "The CVSS vector string, e.g., CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H" }
                             },
-                            // FIX: Added `required` to the nested cvss object schema to ensure its properties are always included.
                             required: ["score", "vector"],
                         },
                         affected: { type: Type.STRING, description: "A summary of affected software and versions." },
@@ -159,9 +158,10 @@ export const getCveDetails = async (cveId: string): Promise<CveDetails> => {
             },
         });
 
-        // Cast the parsed JSON to the CveDetails type. This resolves an error
-        // where the `references` property, inferred as `unknown[]` from JSON.parse,
-        // was not assignable to the expected `string[]` type in CveDetails.
+        // The type of `JSON.parse` is `any`, which can lead to type errors
+        // when assigning to a more specific type. Adding `as CveDetails`
+        // asserts that the parsed object conforms to the CveDetails interface,
+        // resolving the 'unknown[]' is not assignable to 'string[]' error for the `references` property.
         return JSON.parse(response.text) as CveDetails;
 
     } catch (error) {

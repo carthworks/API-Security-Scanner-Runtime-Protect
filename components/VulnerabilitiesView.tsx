@@ -366,8 +366,8 @@ export const VulnerabilitiesView: React.FC<VulnerabilitiesViewProps> = ({ vulner
   return (
     <div className="flex flex-col h-full">
         <h1 className="text-3xl font-bold text-white mb-6">Vulnerabilities</h1>
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 overflow-hidden">
-            <div className="md:col-span-1 h-full overflow-y-auto pr-2">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 overflow-hidden">
+            <div className="lg:col-span-1 h-full overflow-y-auto pr-2">
                 <ul className="space-y-3">
                     {vulnerabilities.map(v => (
                         <VulnerabilityListItem 
@@ -380,7 +380,7 @@ export const VulnerabilitiesView: React.FC<VulnerabilitiesViewProps> = ({ vulner
                     ))}
                 </ul>
             </div>
-            <div className="md:col-span-2 h-full overflow-hidden">
+            <div className="lg:col-span-2 h-full overflow-hidden">
                 {selectedVulnerability ? (
                     <VulnerabilityDetail 
                         vulnerability={selectedVulnerability} 

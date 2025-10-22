@@ -1,13 +1,22 @@
 import React from 'react';
+import { MenuIcon } from './Icons';
 
 interface HeaderProps {
     onNewScanClick: () => void;
+    onMenuClick: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onNewScanClick }) => {
+export const Header: React.FC<HeaderProps> = ({ onNewScanClick, onMenuClick }) => {
   return (
     <header className="h-16 bg-gray-800/50 backdrop-blur-sm border-b border-gray-700 flex-shrink-0">
-      <div className="flex items-center justify-end h-full px-6">
+      <div className="flex items-center justify-between lg:justify-end h-full px-6">
+         <button
+          onClick={onMenuClick}
+          className="lg:hidden text-gray-400 hover:text-white"
+          aria-label="Open sidebar"
+        >
+          <MenuIcon className="h-6 w-6" />
+        </button>
         <div className="flex items-center space-x-4">
             <button className="relative text-gray-400 hover:text-white focus:outline-none">
               <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
