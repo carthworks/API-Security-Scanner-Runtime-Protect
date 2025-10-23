@@ -8,6 +8,9 @@ import { SettingsView } from './components/SettingsView';
 import { NewScanModal } from './components/NewScanModal';
 import { generateMockVulnerabilities, INITIAL_TEAM_MEMBERS } from './constants';
 import type { Vulnerability, Severity } from './types';
+import { Login } from './components/Login';
+import { Register } from './components/Register';
+import { ScreenLock } from './components/ScreenLock';
 
 export type Page = 'Dashboard' | 'Vulnerabilities' | 'Integrations' | 'Settings';
 
@@ -18,6 +21,26 @@ const App: React.FC = () => {
   const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>(() => generateMockVulnerabilities(50, teamMembers));
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [vulnerabilityFilter, setVulnerabilityFilter] = useState<Severity | null>(null);
+  const [authState, setAuthState] = useState<'unauthenticated' | 'authenticated' | 'locked'>('unauthenticated');
+  const [authView, setAuthView] = useState<'login' | 'register'>('login');
+
+  const handleLogin = () => {
+    setAuthState('authenticated');
+    setActivePage('Dashboard'); // Reset to dashboard on login
+  };
+
+  const handleLogout = () => {
+    setAuthState('unauthenticated');
+    setAuthView('login');
+  };
+
+  const handleLock = () => setAuthState('locked');
+  const handleUnlock = () => setAuthState('authenticated');
+
+  const handleRegister = () => {
+    // After registration, switch to login view for user to sign in
+    setAuthView('login');
+  };
 
   const handleAddVulnerability = (newVulnerability: Vulnerability) => {
     setVulnerabilities(prev => [newVulnerability, ...prev]);
@@ -55,6 +78,19 @@ const App: React.FC = () => {
         return <Dashboard onFilterVulnerabilities={handleFilterVulnerabilities} vulnerabilities={vulnerabilities}/>;
     }
   };
+  
+  if (authState === 'locked') {
+    return <ScreenLock onUnlock={handleUnlock} onLogout={handleLogout} />;
+  }
+
+  if (authState === 'unauthenticated') {
+    if (authView === 'login') {
+      return <Login onLogin={handleLogin} onSwitchToRegister={() => setAuthView('register')} />;
+    } else {
+      return <Register onRegister={handleRegister} onSwitchToLogin={() => setAuthView('login')} />;
+    }
+  }
+
 
   return (
     <div className="flex h-screen bg-gray-900 font-sans text-gray-200">
@@ -72,6 +108,8 @@ const App: React.FC = () => {
         onNavigateToVulnerabilities={handleNavigateToVulnerabilities}
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
+        onLock={handleLock}
+        onLogout={handleLogout}
       />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header 

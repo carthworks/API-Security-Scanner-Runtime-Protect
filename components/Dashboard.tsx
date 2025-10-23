@@ -1,9 +1,10 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid, LineChart, Line } from 'recharts';
-import type { Page } from '../App';
-import { Severity, Vulnerability } from '../types';
+import { XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+// FIX: Import Severity as a value for enum usage, and Vulnerability as a type.
+import { Severity, type Vulnerability } from '../types';
 import { ChevronRightIcon, ServerIcon, ShieldIcon, AlertTriangleIcon, ZapIcon, ArrowUpRightIcon, ArrowDownRightIcon, GitPullRequestIcon, CodeIcon } from './Icons';
 import { severityDotColor } from '../constants';
+import { LiveTrafficChart } from './LiveTrafficChart';
 
 interface DashboardProps {
   onFilterVulnerabilities: (severity: Severity) => void;
@@ -31,16 +32,6 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   }
   return null;
 };
-
-const trafficData = [
-    { name: '1m ago', traffic: 4000, anomalies: 2 },
-    { name: '50s ago', traffic: 3000, anomalies: 1 },
-    { name: '40s ago', traffic: 2000, anomalies: 0 },
-    { name: '30s ago', traffic: 2780, anomalies: 5 },
-    { name: '20s ago', traffic: 1890, anomalies: 0 },
-    { name: '10s ago', traffic: 2390, anomalies: 0 },
-    { name: 'now', traffic: 3490, anomalies: 1 },
-];
 
 const StatCard: React.FC<{
     title: string; 
@@ -218,29 +209,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onFilterVulnerabilities, v
         </div>
         
         {/* Runtime Traffic */}
-        <div className="lg:col-span-2 bg-gray-800 p-6 rounded-lg border border-gray-700 h-96 flex flex-col">
-            <h3 className="text-lg font-semibold text-white mb-4">Live API Traffic (Detailed)</h3>
-            <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={trafficData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
-                     <defs>
-                        <linearGradient id="colorTraffic" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#8884d8" stopOpacity={0}/>
-                        </linearGradient>
-                        <linearGradient id="colorAnomalies" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#f56565" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#f56565" stopOpacity={0}/>
-                        </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#4a5568" />
-                    <XAxis dataKey="name" stroke="#a0aec0" />
-                    <YAxis stroke="#a0aec0" />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend />
-                    <Area type="monotone" dataKey="traffic" stroke="#8884d8" strokeWidth={2} fillOpacity={1} fill="url(#colorTraffic)" />
-                    <Area type="monotone" dataKey="anomalies" stroke="#f56565" strokeWidth={2} fillOpacity={1} fill="url(#colorAnomalies)" />
-                </AreaChart>
-            </ResponsiveContainer>
+        <div className="lg:col-span-2">
+            <LiveTrafficChart />
         </div>
       </div>
       

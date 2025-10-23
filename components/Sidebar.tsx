@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Page } from '../App';
-import { DashboardIcon, ShieldIcon, GitPullRequestIcon, SettingsIcon, ChevronLeftIcon } from './Icons';
+import { DashboardIcon, ShieldIcon, GitPullRequestIcon, SettingsIcon, ChevronLeftIcon, LockIcon, LogOutIcon } from './Icons';
 
 interface SidebarProps {
   activePage: Page;
@@ -8,6 +8,8 @@ interface SidebarProps {
   onNavigateToVulnerabilities: () => void;
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
+  onLock: () => void;
+  onLogout: () => void;
 }
 
 const NavItem: React.FC<{
@@ -35,7 +37,25 @@ const NavItem: React.FC<{
   </li>
 );
 
-export const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, onNavigateToVulnerabilities, isOpen, setIsOpen }) => {
+const ActionItem: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  isOpen: boolean;
+}> = ({ icon, label, onClick, isOpen }) => (
+  <li>
+    <button
+      onClick={onClick}
+      className={`flex w-full items-center p-3 my-1 rounded-lg transition-colors duration-200 text-gray-400 hover:bg-gray-700 hover:text-white ${!isOpen ? 'justify-center' : ''}`}
+      title={!isOpen ? label : undefined}
+    >
+      {icon}
+      <span className={`ml-3 font-medium whitespace-nowrap ${!isOpen ? 'lg:hidden' : ''}`}>{label}</span>
+    </button>
+  </li>
+);
+
+export const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, onNavigateToVulnerabilities, isOpen, setIsOpen, onLock, onLogout }) => {
   const handleNavClick = (page: Page) => {
     if (page === 'Vulnerabilities') {
         onNavigateToVulnerabilities();
@@ -54,8 +74,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, onN
         <ShieldIcon className="h-8 w-8 text-indigo-400 shrink-0" />
         <h1 className={`text-xl font-bold ml-2 text-white whitespace-nowrap ${!isOpen ? 'hidden' : ''}`}>Sentinel</h1>
       </div>
-      <nav className="flex-1 px-2 py-4">
-        <ul>
+      <nav className="flex-1 px-2 py-4 flex flex-col">
+        <ul className="flex-grow">
           <NavItem
             icon={<DashboardIcon className="h-6 w-6 shrink-0" />}
             label="Dashboard"
@@ -85,6 +105,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, onN
             isOpen={isOpen}
           />
         </ul>
+        <ul>
+            <ActionItem
+                icon={<LockIcon className="h-6 w-6 shrink-0" />}
+                label="Lock Screen"
+                onClick={onLock}
+                isOpen={isOpen}
+            />
+        </ul>
       </nav>
       <div className={`px-4 py-4 border-t border-gray-700 overflow-hidden ${!isOpen && 'lg:px-2'}`}>
         <div className={`flex items-center ${!isOpen && 'lg:justify-center'}`}>
@@ -93,6 +121,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, onN
                 <p className="text-sm font-medium text-white whitespace-nowrap">Dev Team</p>
                 <p className="text-xs text-gray-400 whitespace-nowrap">Pro Plan</p>
             </div>
+             <button onClick={onLogout} title="Logout" className={`ml-auto p-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-700 transition-colors ${!isOpen && 'lg:hidden'}`}>
+                <LogOutIcon className="h-5 w-5"/>
+            </button>
         </div>
       </div>
        <button 
