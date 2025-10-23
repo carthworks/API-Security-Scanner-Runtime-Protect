@@ -200,7 +200,7 @@ const VulnerabilityDetail: React.FC<{
                 </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-6">
                 <div className="bg-gray-900/50 p-3 rounded-md">
                     <div className="text-gray-400 font-semibold">Severity</div>
                     <div className={`font-bold ${severityConfig[vulnerability.severity].color}`}>{vulnerability.severity}</div>
@@ -208,6 +208,10 @@ const VulnerabilityDetail: React.FC<{
                  <div className="bg-gray-900/50 p-3 rounded-md">
                     <div className="text-gray-400 font-semibold">OWASP Top 10</div>
                     <div className="font-bold text-gray-200">{vulnerability.owaspId}</div>
+                </div>
+                 <div className="bg-gray-900/50 p-3 rounded-md">
+                    <div className="text-gray-400 font-semibold">Discovered On</div>
+                    <div className="font-bold text-gray-200">{new Date(vulnerability.discoveredAt).toLocaleString()}</div>
                 </div>
                  <div className="bg-gray-900/50 p-3 rounded-md">
                     <label htmlFor="assignee-select" className="text-gray-400 font-semibold">Assignee</label>
@@ -245,7 +249,7 @@ const VulnerabilityDetail: React.FC<{
                  <div>
                     <h4 className="font-semibold text-gray-300 mb-3">Activity Timeline</h4>
                     <ul className="space-y-4">
-                        {vulnerability.statusHistory.slice().reverse().map((entry, index, arr) => (
+                        {vulnerability.statusHistory.map((entry, index, arr) => (
                            <li key={entry.timestamp} className="relative pl-8">
                                 <div className={`absolute -left-[calc(0.375rem)] top-1 h-3 w-3 rounded-full ${statusTimelineDotColor[entry.status]}`}></div>
                                 {index < arr.length - 1 && <div className="absolute -left-1 top-4 h-full w-0.5 bg-gray-700"></div>}

@@ -23,12 +23,14 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({ isOpen, onClose, onA
     const [scanName, setScanName] = useState('Weekly Production Scan');
     const [targetUrl, setTargetUrl] = useState('https://api.example.com/v2/products/search');
     const [showAdvanced, setShowAdvanced] = useState(false);
+    const [scanProfile, setScanProfile] = useState('Standard Unauthenticated');
+    const [apiKey, setApiKey] = useState('');
     const [scanDepth, setScanDepth] = useState('Normal');
     const [includeRegex, setIncludeRegex] = useState('');
     const [excludeRegex, setExcludeRegex] = useState('/api/v1/health');
     const [minSeverity, setMinSeverity] = useState<Severity>(Severity.Low);
     
-    const [errors, setErrors] = useState<{ scanName?: string; targetUrl?: string }>({});
+    const [errors, setErrors] = useState<{ scanName?: string; targetUrl?: string; apiKey?: string }>({});
     const [scanSummary, setScanSummary] = useState<ScanSummary | null>(null);
 
     useEffect(() => {
@@ -41,7 +43,7 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({ isOpen, onClose, onA
     }, [isOpen]);
 
     const validateForm = (): boolean => {
-        const newErrors: { scanName?: string; targetUrl?: string } = {};
+        const newErrors: { scanName?: string; targetUrl?: string; apiKey?: string } = {};
         if (!scanName.trim()) {
             newErrors.scanName = 'Scan name is required.';
         }
@@ -53,6 +55,10 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({ isOpen, onClose, onA
             } catch (_) {
                 newErrors.targetUrl = 'Please enter a valid URL.';
             }
+        }
+        
+        if (scanProfile === 'Authenticated Deep Scan' && !apiKey.trim()) {
+            newErrors.apiKey = 'API Key is required for authenticated scans.';
         }
         
         setErrors(newErrors);
@@ -137,6 +143,25 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({ isOpen, onClose, onA
             {showAdvanced && (
                 <div className="space-y-4 pt-4 border-t border-gray-700/50">
                     <div>
+                        <label htmlFor="scan-profile" className="block text-sm font-medium text-gray-300">Scan Profile</label>
+                        <select id="scan-profile" value={scanProfile} onChange={e => setScanProfile(e.target.value)} className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                            <option>Standard Unauthenticated</option>
+                            <option>Authenticated Deep Scan</option>
+                        </select>
+                    </div>
+                     <div>
+                        <label htmlFor="api-key" className="block text-sm font-medium text-gray-300">API Key</label>
+                        <input 
+                            type="password" 
+                            id="api-key" 
+                            value={apiKey}
+                            onChange={(e) => setApiKey(e.target.value)}
+                            className={`mt-1 block w-full rounded-md border bg-gray-700 text-white shadow-sm focus:ring-indigo-500 sm:text-sm p-2 ${errors.apiKey ? 'border-red-500/50 focus:border-red-500' : 'border-gray-600 focus:border-indigo-500'}`}
+                            placeholder="Enter authentication token or key"
+                        />
+                        {errors.apiKey && <p className="mt-1 text-xs text-red-400">{errors.apiKey}</p>}
+                    </div>
+                    <div>
                         <label htmlFor="scan-depth" className="block text-sm font-medium text-gray-300">Scan Depth</label>
                         <select id="scan-depth" value={scanDepth} onChange={e => setScanDepth(e.target.value)} className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
                             <option>Quick</option>
@@ -174,6 +199,14 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({ isOpen, onClose, onA
                     <span className="text-gray-400">Target URL:</span>
                     <span className="font-semibold text-white font-mono truncate pl-4">{targetUrl}</span>
                 </div>
+                 <div className="flex justify-between items-center">
+                    <span className="text-gray-400">Scan Profile:</span>
+                    <span className="font-semibold text-white">{scanProfile}</span>
+                </div>
+                {apiKey && <div className="flex justify-between items-center">
+                    <span className="text-gray-400">API Key:</span>
+                    <span className="font-semibold text-white font-mono">************{apiKey.slice(-4)}</span>
+                </div>}
                 <div className="flex justify-between items-center">
                     <span className="text-gray-400">Scan Depth:</span>
                     <span className="font-semibold text-white">{scanDepth}</span>
