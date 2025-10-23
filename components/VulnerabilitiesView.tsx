@@ -2,7 +2,8 @@ import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Severity, Vulnerability, VulnerabilityStatus } from '../types';
 import { getRemediation, getRelatedCVEs, CveInfo, getCveDetails, CveDetails } from '../services/geminiService';
 import { severityConfig, severityDotColor, statusConfig, statusTimelineDotColor } from '../constants';
-import { ChevronRightIcon, ChevronDownIcon, ExternalLinkIcon, XCircleIcon, SearchIcon, FilterIcon } from './Icons';
+// FIX: Import `CheckCircleIcon` to resolve usage error.
+import { ChevronRightIcon, ChevronDownIcon, ExternalLinkIcon, XCircleIcon, SearchIcon, FilterIcon, RefreshCwIcon, ClipboardIcon, CheckCircleIcon } from './Icons';
 
 const AssigneeAvatar: React.FC<{ name?: string }> = ({ name }) => {
     if (!name) {
@@ -95,13 +96,80 @@ const getCvssSeverity = (score: number): { text: string; bg: string; border: str
     return { text: 'text-blue-300', bg: 'bg-blue-500/20', border: 'border-blue-500/30' };
 };
 
+// FIX: Refactor `CodeBlock` to expect a string child, which reflects its usage
+// and fixes the TypeScript error on `children.props.children`.
+const CodeBlock: React.FC<{ children: string }> = ({ children }) => {
+    const [copied, setCopied] = useState(false);
+    const textToCopy = children;
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(textToCopy);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    return (
+        <div className="bg-gray-900 p-4 rounded-lg border border-gray-600 relative my-2">
+            <button
+                onClick={handleCopy}
+                className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-white bg-gray-700/50 hover:bg-gray-600 rounded-md transition-colors"
+                aria-label="Copy code to clipboard"
+            >
+                {copied ? <CheckCircleIcon className="h-5 w-5 text-green-400" /> : <ClipboardIcon className="h-5 w-5" />}
+            </button>
+            <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono overflow-x-auto">
+                <code>{children}</code>
+            </pre>
+        </div>
+    );
+};
+
+
+const SimpleMarkdownRenderer: React.FC<{ content: string }> = ({ content }) => {
+    const parts = content.split(/(```[\s\S]*?```)/g);
+
+    return (
+        <div>
+            {parts.map((part, index) => {
+                if (part.startsWith('```')) {
+                    const code = part.replace(/```(javascript|python|java|bash)?\n?/g, '').replace(/```/g, '').trim();
+                    return <CodeBlock key={index}>{code}</CodeBlock>;
+                }
+                
+                const lines = part.trim().split('\n');
+                return lines.map((line, lineIndex) => {
+                    if (line.startsWith('### ')) {
+                        return <h3 key={`${index}-${lineIndex}`} className="text-md font-semibold text-gray-200 mt-4 mb-2">{line.substring(4)}</h3>;
+                    }
+                     if (line.startsWith('**') && line.endsWith('**')) {
+                        return <strong key={`${index}-${lineIndex}`} className="text-gray-200 block my-1">{line.substring(2, line.length - 2)}</strong>
+                    }
+                    if (line.startsWith('* ')) {
+                         return <li key={`${index}-${lineIndex}`} className="text-sm text-gray-400 ml-5 my-1 list-disc">{line.substring(2)}</li>
+                    }
+                    return <p key={`${index}-${lineIndex}`} className="text-sm text-gray-400 my-2">{line}</p>;
+                });
+            })}
+        </div>
+    );
+};
+
+const RemediationLoadingSkeleton = () => (
+    <div className="mt-4 bg-gray-900 p-4 rounded-lg border border-gray-600 animate-pulse">
+        <div className="h-4 bg-gray-700 rounded w-1/4 mb-4"></div>
+        <div className="h-3 bg-gray-700 rounded w-full mb-2"></div>
+        <div className="h-3 bg-gray-700 rounded w-5/6 mb-4"></div>
+        <div className="h-20 bg-gray-700 rounded w-full"></div>
+    </div>
+);
+
 const VulnerabilityDetail: React.FC<{ 
     vulnerability: Vulnerability; 
     onStatusChange: (id: string, newStatus: VulnerabilityStatus) => void; 
     onAssigneeChange: (id: string, newAssignee?: string) => void;
+    onVulnerabilityUpdate: (id: string, updates: Partial<Vulnerability>) => void;
     teamMembers: string[];
-}> = ({ vulnerability, onStatusChange, onAssigneeChange, teamMembers }) => {
-    const [remediation, setRemediation] = useState<string | null>(null);
+}> = ({ vulnerability, onStatusChange, onAssigneeChange, onVulnerabilityUpdate, teamMembers }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -115,29 +183,43 @@ const VulnerabilityDetail: React.FC<{
     const [cveDetailsError, setCveDetailsError] = useState<string | null>(null);
 
     useEffect(() => {
-        setRemediation(null);
+        // Reset AI-related state when vulnerability changes, but keep cached remediation
         setError(null);
         setCveInfo(null);
         setCveError(null);
         setSelectedCveId(null);
         setCveDetails(null);
         setCveDetailsError(null);
+        setIsLoading(false); // Cancel loading if user switches
     }, [vulnerability.id]);
 
-    const handleGetRemediation = useCallback(async () => {
+    const handleGetRemediation = useCallback(async (forceRegenerate = false) => {
+        if (vulnerability.remediation && !forceRegenerate) {
+            return; // Use cached version
+        }
+        
+        if (forceRegenerate && !window.confirm('Are you sure you want to regenerate the advice? This may provide a different suggestion.')) {
+            return;
+        }
+
         setIsLoading(true);
         setError(null);
-        setRemediation(null);
+        
+        // Clear old remediation if regenerating
+        if (forceRegenerate) {
+             onVulnerabilityUpdate(vulnerability.id, { remediation: undefined });
+        }
+
         try {
             const result = await getRemediation(vulnerability);
-            setRemediation(result);
+            onVulnerabilityUpdate(vulnerability.id, { remediation: result });
         } catch (err) {
             setError('Failed to get remediation advice. Please try again.');
             console.error(err);
         } finally {
             setIsLoading(false);
         }
-    }, [vulnerability]);
+    }, [vulnerability, onVulnerabilityUpdate]);
 
      const handleGetCves = useCallback(async () => {
         setIsCveLoading(true);
@@ -263,7 +345,7 @@ const VulnerabilityDetail: React.FC<{
                 <div className="border-t border-gray-700 pt-6">
                     <h3 className="text-lg font-semibold text-white mb-2">AI-Powered Remediation</h3>
                     <button 
-                        onClick={handleGetRemediation}
+                        onClick={() => handleGetRemediation(!!vulnerability.remediation)}
                         disabled={isLoading}
                         className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-800 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center"
                     >
@@ -275,12 +357,17 @@ const VulnerabilityDetail: React.FC<{
                                 </svg>
                                 Generating...
                             </>
-                        ) : 'Get Code-Level Fix'}
+                        ) : (
+                            vulnerability.remediation ? 
+                            <><RefreshCwIcon className="h-5 w-5 mr-2" /> Regenerate Fix</> :
+                            'Get Code-Level Fix'
+                        )}
                     </button>
                     {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-                    {remediation && (
-                        <div className="mt-4 bg-gray-900 p-4 rounded-lg border border-gray-600">
-                             <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono">{remediation}</pre>
+                    {isLoading && <RemediationLoadingSkeleton />}
+                    {vulnerability.remediation && !isLoading && (
+                        <div className="mt-4">
+                             <SimpleMarkdownRenderer content={vulnerability.remediation} />
                         </div>
                     )}
                 </div>
@@ -483,6 +570,14 @@ export const VulnerabilitiesView: React.FC<VulnerabilitiesViewProps> = ({ vulner
         )
       );
   };
+  
+  const handleUpdateVulnerability = (vulnerabilityId: string, updates: Partial<Vulnerability>) => {
+      setVulnerabilities(currentVulnerabilities =>
+        currentVulnerabilities.map(v =>
+            v.id === vulnerabilityId ? { ...v, ...updates } : v
+        )
+      );
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -575,6 +670,7 @@ export const VulnerabilitiesView: React.FC<VulnerabilitiesViewProps> = ({ vulner
                         vulnerability={selectedVulnerability} 
                         onStatusChange={handleStatusChange} 
                         onAssigneeChange={handleAssigneeChange}
+                        onVulnerabilityUpdate={handleUpdateVulnerability}
                         teamMembers={teamMembers}
                     />
                 ) : (

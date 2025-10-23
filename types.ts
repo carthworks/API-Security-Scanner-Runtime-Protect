@@ -34,4 +34,5 @@ export interface Vulnerability {
   details: string;
   discoveredAt: string;
   assignee?: string;
+  remediation?: string; // Cache for AI-generated advice
 }
