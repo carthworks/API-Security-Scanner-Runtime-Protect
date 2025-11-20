@@ -4,7 +4,9 @@ Sentinel is a developer-centric SaaS platform designed to provide comprehensive 
 
 This application is a feature-rich frontend prototype built with React, TypeScript, and the Google Gemini API to demonstrate the core functionalities of such a platform.
 
-![Sentinel Screenshot](https://i.imgur.com/K5a1E8X.png)
+![Sentinel Screenshot]
+<img width="1467" height="973" alt="image" src="https://github.com/user-attachments/assets/70453d27-a7d3-4c35-b172-6be212605d7b" />
+
 
 ---
 
