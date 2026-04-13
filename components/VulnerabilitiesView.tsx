@@ -1,9 +1,10 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Severity, Vulnerability, VulnerabilityStatus } from '../types';
-import { getRemediation, getRelatedCVEs, CveInfo, getCveDetails, CveDetails } from '../services/geminiService';
+import { getRemediation, getRelatedCVEs, CveInfo, getCveDetails, CveDetails, getAvailableModels } from '../services/ollamaService';
 import { severityConfig, severityDotColor, statusConfig, statusTimelineDotColor } from '../constants';
 // FIX: Import `CheckCircleIcon` to resolve usage error.
 import { ChevronRightIcon, ChevronDownIcon, ExternalLinkIcon, XCircleIcon, SearchIcon, FilterIcon, RefreshCwIcon, ClipboardIcon, CheckCircleIcon } from './Icons';
+
 
 const AssigneeAvatar: React.FC<{ name?: string }> = ({ name }) => {
     if (!name) {
@@ -169,7 +170,8 @@ const VulnerabilityDetail: React.FC<{
     onAssigneeChange: (id: string, newAssignee?: string) => void;
     onVulnerabilityUpdate: (id: string, updates: Partial<Vulnerability>) => void;
     teamMembers: string[];
-}> = ({ vulnerability, onStatusChange, onAssigneeChange, onVulnerabilityUpdate, teamMembers }) => {
+    selectedModel: string;
+}> = ({ vulnerability, onStatusChange, onAssigneeChange, onVulnerabilityUpdate, teamMembers, selectedModel }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -211,7 +213,7 @@ const VulnerabilityDetail: React.FC<{
         }
 
         try {
-            const result = await getRemediation(vulnerability);
+            const result = await getRemediation(vulnerability, selectedModel);
             onVulnerabilityUpdate(vulnerability.id, { remediation: result });
         } catch (err) {
             setError('Failed to get remediation advice. Please try again.');
@@ -219,14 +221,14 @@ const VulnerabilityDetail: React.FC<{
         } finally {
             setIsLoading(false);
         }
-    }, [vulnerability, onVulnerabilityUpdate]);
+    }, [vulnerability, onVulnerabilityUpdate, selectedModel]);
 
      const handleGetCves = useCallback(async () => {
         setIsCveLoading(true);
         setCveError(null);
         setCveInfo(null);
         try {
-            const result = await getRelatedCVEs(vulnerability);
+            const result = await getRelatedCVEs(vulnerability, selectedModel);
             setCveInfo(result);
         } catch (err) {
             setCveError('Failed to get CVE information. Please try again.');
@@ -234,7 +236,7 @@ const VulnerabilityDetail: React.FC<{
         } finally {
             setIsCveLoading(false);
         }
-    }, [vulnerability]);
+    }, [vulnerability, selectedModel]);
 
     const handleGetCveDetails = useCallback(async (cveId: string) => {
         if (selectedCveId === cveId) {
@@ -249,7 +251,7 @@ const VulnerabilityDetail: React.FC<{
         setCveDetails(null);
 
         try {
-            const result = await getCveDetails(cveId);
+            const result = await getCveDetails(cveId, selectedModel);
             setCveDetails(result);
         } catch (err) {
             setCveDetailsError(`Failed to fetch details for ${cveId}.`);
@@ -257,7 +259,7 @@ const VulnerabilityDetail: React.FC<{
         } finally {
             setIsCveDetailsLoading(false);
         }
-    }, [selectedCveId]);
+    }, [selectedCveId, selectedModel]);
 
     return (
         <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 h-full overflow-y-auto">
@@ -374,7 +376,7 @@ const VulnerabilityDetail: React.FC<{
 
                  <div className="border-t border-gray-700 pt-6">
                     <h3 className="text-lg font-semibold text-white mb-2">Related CVEs & Exploits</h3>
-                    <p className="text-sm text-gray-400 mb-3">Use Google Search to find relevant, publicly disclosed vulnerabilities.</p>
+                    <p className="text-sm text-gray-400 mb-3">Use local Ollama model to find relevant vulnerabilities and exploits.</p>
                     <button 
                         onClick={handleGetCves}
                         disabled={isCveLoading}
@@ -486,6 +488,27 @@ export const VulnerabilitiesView: React.FC<VulnerabilitiesViewProps> = ({ vulner
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<VulnerabilityStatus | 'All'>('All');
   const [sortBy, setSortBy] = useState('discoveredAt-desc');
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [selectedModel, setSelectedModel] = useState<string>('llama2');
+
+  useEffect(() => {
+     getAvailableModels().then(models => {
+         // if models are returned from ollama, set them
+         if (models.length > 0) {
+             setAvailableModels(models);
+             // Default to llama2 if it exists, otherwise the first model available.
+             if (!models.includes('llama2')) {
+                 setSelectedModel(models[0]);
+             } else {
+                 setSelectedModel('llama2');
+             }
+         } else {
+             // Fallback for UI if no models found (or server offline)
+             setAvailableModels(['llama2 (Offline)', 'llama3 (Offline)']);
+             setSelectedModel('llama2 (Offline)');
+         }
+     });
+  }, []);
 
   const processedVulnerabilities = useMemo(() => {
     let results = [...vulnerabilities];
@@ -638,6 +661,17 @@ export const VulnerabilitiesView: React.FC<VulnerabilitiesViewProps> = ({ vulner
                         <option value="assignee-desc">Assignee (Z-A)</option>
                     </select>
                 </div>
+                 <div className="flex items-center border-l border-gray-600 pl-4 ml-2">
+                    <label htmlFor="model-select" className="text-sm font-medium text-gray-300 mr-2">AI Model:</label>
+                    <select
+                        id="model-select"
+                        value={selectedModel}
+                        onChange={(e) => setSelectedModel(e.target.value)}
+                        className="rounded-md bg-gray-700 border-transparent text-white focus:border-indigo-500 focus:ring-indigo-500 text-sm py-1"
+                    >
+                        {availableModels.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                </div>
             </div>
             <div className="text-sm text-gray-400">
                 Showing <span className="font-semibold text-white">{processedVulnerabilities.length}</span> of {vulnerabilities.length} vulnerabilities
@@ -672,6 +706,7 @@ export const VulnerabilitiesView: React.FC<VulnerabilitiesViewProps> = ({ vulner
                         onAssigneeChange={handleAssigneeChange}
                         onVulnerabilityUpdate={handleUpdateVulnerability}
                         teamMembers={teamMembers}
+                        selectedModel={selectedModel}
                     />
                 ) : (
                     <div className="flex items-center justify-center h-full bg-gray-800 rounded-lg text-gray-500">

@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Page } from '../App';
-import { DashboardIcon, ShieldIcon, GitPullRequestIcon, SettingsIcon, ChevronLeftIcon, LockIcon, LogOutIcon } from './Icons';
+import { ChevronLeftIcon, DashboardIcon, GitPullRequestIcon, LockIcon, LogOutIcon, SettingsIcon, ShieldIcon } from './Icons';
 
 interface SidebarProps {
   activePage: Page;
@@ -72,7 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, onN
     <aside className={`fixed inset-y-0 left-0 z-40 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0 transition-all duration-300 ease-in-out bg-gray-800 border-r border-gray-700 flex flex-col ${isOpen ? 'w-64' : 'w-20'}`}>
       <div className={`h-16 flex items-center border-b border-gray-700 shrink-0 overflow-hidden ${isOpen ? 'px-4' : 'justify-center'}`}>
         <ShieldIcon className="h-8 w-8 text-indigo-400 shrink-0" />
-        <h1 className={`text-xl font-bold ml-2 text-white whitespace-nowrap ${!isOpen ? 'hidden' : ''}`}>Sentinel</h1>
+        <h1 className={`text-xl font-bold ml-2 text-white whitespace-nowrap ${!isOpen ? 'hidden' : ''}`}>Sentinelj</h1>
       </div>
       <nav className="flex-1 px-2 py-4 flex flex-col">
         <ul className="flex-grow">

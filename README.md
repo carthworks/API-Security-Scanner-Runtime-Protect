@@ -44,7 +44,7 @@ This platform is built around four core goals:
 *   **Frontend Framework**: React
 *   **Language**: TypeScript
 *   **Styling**: Tailwind CSS
-*   **AI Integration**: Google Gemini API (`@google/genai`)
+*   **AI Integration**: Local Ollama Model (e.g., Llama 2)
 *   **Data Visualization**: Recharts
 
 ---
@@ -61,7 +61,7 @@ The application is organized into several key directories and files:
     *   `SettingsView.tsx`: Houses all application and team settings.
     *   `Sidebar.tsx` & `Header.tsx`: The main navigation elements.
     *   `NewScanModal.tsx`: The modal for initiating new scans.
-*   **`services/geminiService.ts`**: A dedicated module for all interactions with the Google Gemini API. This includes generating remediation, searching for CVEs, and fetching CVE details.
+*   **`services/ollamaService.ts`**: A dedicated module for all interactions with the local Ollama API. This includes generating remediation, searching for CVEs, and fetching CVE details using local LLM knowledge.
 *   **`constants.ts`**: Contains static data, UI configuration objects (like colors for severity levels), and the mock data generation function.
 *   **`types.ts`**: Defines all shared TypeScript interfaces and enums (`Vulnerability`, `Severity`, etc.).
 *   **`index.html` & `index.tsx`**: The entry point for the web application.
@@ -70,22 +70,27 @@ The application is organized into several key directories and files:
 
 ## 🚀 Getting Started
 
-This is a self-contained web application that runs entirely in the browser.
+This is a self-contained web application that runs entirely in the browser, powered by a local Ollama server for AI functionalities.
 
 ### Prerequisites
 
-The application requires a **Google Gemini API key** to power its AI features (remediation and CVE analysis).
+1. Node.js installed.
+2. [Ollama](https://ollama.com/) installed and running locally.
+3. At least one model downloaded in Ollama (default is `llama2`):
+   ```bash
+   ollama pull llama2
+   ```
 
-### Configuration
+### Running the Application
 
-The API key must be available as an environment variable named `API_KEY`. The application is coded to read this key directly from `process.env.API_KEY`.
+1. Make sure your Ollama service is running (`localhost:11434`).
+2. Start the development server:
 
 ```bash
-# Example of setting the environment variable before running
-export API_KEY="YOUR_GEMINI_API_KEY"
+npm start
 ```
 
-Once the API key is configured, simply open the `index.html` file in a web browser.
+Once running, simply open the provided `http://localhost:5173` link in a web browser.
 
 ---
 
