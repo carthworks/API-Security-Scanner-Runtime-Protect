@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Vulnerability, VulnerabilityStatus, Severity } from '../types';
-import { NEW_SCAN_FINDING, severityConfig, generateMockVulnerabilities, INITIAL_TEAM_MEMBERS } from '../constants';
+import { severityConfig } from '../constants';
 import { XIcon, CheckCircleIcon, ChevronDownIcon, AlertTriangleIcon } from './Icons';
 import { scanForVulnerabilities, getAvailableModels, ScanProgress } from '../services/ollamaService';
 
@@ -10,7 +10,7 @@ interface NewScanModalProps {
     onAddVulnerability: (vulnerability: Vulnerability) => void;
 }
 
-type ScanStep = 'form' | 'confirm' | 'scanning' | 'complete';
+type ScanStep = 'form' | 'confirm' | 'scanning' | 'complete' | 'no-findings';
 interface ScanSummary {
     vulnerabilitiesFound: number;
     highestSeverity: Severity;
@@ -138,7 +138,8 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({ isOpen, onClose, onA
 
         if (ollamaFindings.length > 0) {
             // Map Ollama findings → full Vulnerability objects
-            newVulnerabilities = ollamaFindings.map((f, i) => ({
+            const discoveredAt = new Date().toISOString();
+            const newVulnerabilities: Vulnerability[] = ollamaFindings.map((f, i) => ({
                 id: `vuln-ollama-${Date.now()}-${i}`,
                 type: f.type,
                 owaspId: f.owaspId,
@@ -154,39 +155,22 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({ isOpen, onClose, onA
                 discoveredAt,
                 assignee: undefined,
             }));
-        } else {
-            // Fallback: generate a single mock finding
-            setScanProgress(prev => ({
-                phase: 'done',
-                message: ollamaOnline === false
-                    ? 'Ollama offline — using simulated findings.'
-                    : 'No structured findings returned — using simulated result.',
-                found: 1,
-            }));
-            const fallbackPath = scanSource === 'url' && targetUrl
-                ? (() => { try { return new URL(targetUrl).pathname; } catch { return '/simulated/path'; } })()
-                : `/${folderPath || 'local'}/api/main`;
-            newVulnerabilities = [{
-                ...NEW_SCAN_FINDING,
-                id: `vuln-${Date.now()}`,
-                endpoint: { method: 'GET', path: fallbackPath },
-                discoveredAt,
-                statusHistory: [{ status: VulnerabilityStatus.New, timestamp: discoveredAt }],
-                assignee: undefined,
-            }];
-        }
 
-        const summary: ScanSummary = {
-            vulnerabilitiesFound: newVulnerabilities.length,
-            highestSeverity: newVulnerabilities.reduce((worst, v) => {
-                const order = [Severity.Critical, Severity.High, Severity.Medium, Severity.Low, Severity.Info];
-                return order.indexOf(v.severity) < order.indexOf(worst) ? v.severity : worst;
-            }, Severity.Info),
-            endpointsScanned: Math.max(newVulnerabilities.length, Math.floor(Math.random() * 40) + 10),
-        };
-        setScanSummary(summary);
-        newVulnerabilities.forEach(v => onAddVulnerability(v));
-        setScanStep('complete');
+            const summary: ScanSummary = {
+                vulnerabilitiesFound: newVulnerabilities.length,
+                highestSeverity: newVulnerabilities.reduce((worst, v) => {
+                    const order = [Severity.Critical, Severity.High, Severity.Medium, Severity.Low, Severity.Info];
+                    return order.indexOf(v.severity) < order.indexOf(worst) ? v.severity : worst;
+                }, Severity.Info),
+                endpointsScanned: Math.max(newVulnerabilities.length, Math.floor(Math.random() * 40) + 10),
+            };
+            setScanSummary(summary);
+            newVulnerabilities.forEach(v => onAddVulnerability(v));
+            setScanStep('complete');
+        } else {
+            // Ollama offline or returned nothing — show an honest empty result
+            setScanStep('no-findings');
+        }
     };
 
     if (!isOpen) return null;
@@ -577,9 +561,7 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({ isOpen, onClose, onA
                         </div>
                         <p className="text-lg font-medium text-white">Scan finished successfully!</p>
                         <p className="text-sm text-gray-400">
-                            {ollamaOnline
-                                ? `${scanSummary?.vulnerabilitiesFound ?? 0} vulnerabilities found by Ollama (${selectedModel}).`
-                                : 'Ollama offline — results are simulated.'}
+                            {scanSummary?.vulnerabilitiesFound ?? 0} vulnerabilities found by Ollama ({selectedModel}).
                         </p>
                     </div>
                     {scanSummary && (
@@ -605,6 +587,29 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({ isOpen, onClose, onA
                     )}
                 </div>
             );
+            case 'no-findings': return (
+                <div className="py-8 text-center space-y-4">
+                    <div className="flex justify-center">
+                        <div className="h-14 w-14 rounded-full bg-yellow-500/10 flex items-center justify-center">
+                            <AlertTriangleIcon className="h-7 w-7 text-yellow-400" />
+                        </div>
+                    </div>
+                    <p className="text-base font-semibold text-white">
+                        {ollamaOnline === false ? 'Ollama is not running' : 'No findings returned'}
+                    </p>
+                    <p className="text-sm text-gray-400 max-w-sm mx-auto">
+                        {ollamaOnline === false
+                            ? 'Start Ollama locally and make sure a model is pulled, then try again.'
+                            : `The model (${selectedModel}) did not return structured vulnerability data. Try a different model or refine your target.`}
+                    </p>
+                    {ollamaOnline === false && (
+                        <div className="bg-gray-900 rounded-lg border border-gray-700 p-3 text-left text-xs font-mono text-gray-400 inline-block">
+                            <span className="text-green-400">$</span> ollama pull llama3<br />
+                            <span className="text-green-400">$</span> ollama serve
+                        </div>
+                    )}
+                </div>
+            );
             default: return null;
         }
     };
@@ -615,6 +620,7 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({ isOpen, onClose, onA
             case 'confirm': return 'Confirm Scan Details';
             case 'scanning': return 'Scanning In Progress';
             case 'complete': return 'Scan Complete';
+            case 'no-findings': return 'Scan Finished';
             default: return '';
         }
     }

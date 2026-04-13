@@ -6,19 +6,20 @@ import { VulnerabilitiesView } from './components/VulnerabilitiesView';
 import { IntegrationsView } from './components/IntegrationsView';
 import { SettingsView } from './components/SettingsView';
 import { NewScanModal } from './components/NewScanModal';
-import { generateMockVulnerabilities, INITIAL_TEAM_MEMBERS } from './constants';
+import { GuideView } from './components/GuideView';
+
 import type { Vulnerability, Severity } from './types';
 import { Login } from './components/Login';
 import { Register } from './components/Register';
 import { ScreenLock } from './components/ScreenLock';
 
-export type Page = 'Dashboard' | 'Vulnerabilities' | 'Integrations' | 'Settings';
+export type Page = 'Dashboard' | 'Vulnerabilities' | 'Integrations' | 'Settings' | 'Guide';
 
 const App: React.FC = () => {
   const [activePage, setActivePage] = useState<Page>('Dashboard');
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
-  const [teamMembers, setTeamMembers] = useState<string[]>(INITIAL_TEAM_MEMBERS);
-  const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>(() => generateMockVulnerabilities(50, teamMembers));
+  const [teamMembers, setTeamMembers] = useState<string[]>([]);
+  const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [vulnerabilityFilter, setVulnerabilityFilter] = useState<Severity | null>(null);
   const [authState, setAuthState] = useState<'unauthenticated' | 'authenticated' | 'locked'>('unauthenticated');
@@ -74,6 +75,8 @@ const App: React.FC = () => {
         return <IntegrationsView />;
       case 'Settings':
         return <SettingsView teamMembers={teamMembers} setTeamMembers={setTeamMembers} />;
+      case 'Guide':
+        return <GuideView />;
       default:
         return <Dashboard onFilterVulnerabilities={handleFilterVulnerabilities} vulnerabilities={vulnerabilities}/>;
     }

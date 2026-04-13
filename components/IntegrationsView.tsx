@@ -29,21 +29,7 @@ interface Integration {
     repos: Repository[];
 }
 
-// ─── Mock Data ───────────────────────────────────────────────────────────────
-
-const mockRepos: Record<ProviderName, Repository[]> = {
-    GitHub: [
-        { id: 'gh-1', name: 'api-gateway', fullName: 'acme-corp/api-gateway', branch: 'main', lastScanned: new Date(Date.now() - 3600000 * 2).toISOString(), scanStatus: 'issues', issueCount: 7, pipelineStatus: 'failing', isPrivate: false },
-        { id: 'gh-2', name: 'user-service', fullName: 'acme-corp/user-service', branch: 'main', lastScanned: new Date(Date.now() - 3600000 * 8).toISOString(), scanStatus: 'clean', issueCount: 0, pipelineStatus: 'passing', isPrivate: true },
-        { id: 'gh-3', name: 'payment-api', fullName: 'acme-corp/payment-api', branch: 'develop', lastScanned: new Date(Date.now() - 86400000).toISOString(), scanStatus: 'issues', issueCount: 3, pipelineStatus: 'passing', isPrivate: true },
-        { id: 'gh-4', name: 'notifications-service', fullName: 'acme-corp/notifications-service', branch: 'main', lastScanned: null, scanStatus: 'pending', issueCount: 0, pipelineStatus: 'pending', isPrivate: false },
-    ],
-    GitLab: [
-        { id: 'gl-1', name: 'core-backend', fullName: 'acme/core-backend', branch: 'production', lastScanned: new Date(Date.now() - 3600000 * 5).toISOString(), scanStatus: 'clean', issueCount: 0, pipelineStatus: 'passing', isPrivate: true },
-        { id: 'gl-2', name: 'data-pipeline', fullName: 'acme/data-pipeline', branch: 'main', lastScanned: new Date(Date.now() - 3600000 * 12).toISOString(), scanStatus: 'issues', issueCount: 2, pipelineStatus: 'failing', isPrivate: true },
-    ],
-    Bitbucket: [],
-};
+// ─── Initial state — all providers disconnected ───────────────────────────────
 
 const initialIntegrations: Integration[] = [
     {
@@ -51,18 +37,16 @@ const initialIntegrations: Integration[] = [
         description: 'Scan public and private repositories, trigger scans on pull requests.',
         icon: <GithubIcon className="h-7 w-7 text-white" />,
         accentColor: 'border-gray-500',
-        isConnected: true,
-        connectedAccount: 'acme-corp',
-        repos: mockRepos['GitHub'],
+        isConnected: false,
+        repos: [],
     },
     {
         name: 'GitLab',
         description: 'Integrate with GitLab CI/CD pipelines and merge request checks.',
         icon: <GitlabIcon className="h-7 w-7 text-orange-400" />,
         accentColor: 'border-orange-500',
-        isConnected: true,
-        connectedAccount: 'acme',
-        repos: mockRepos['GitLab'],
+        isConnected: false,
+        repos: [],
     },
     {
         name: 'Bitbucket',
@@ -73,6 +57,7 @@ const initialIntegrations: Integration[] = [
         repos: [],
     },
 ];
+
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -756,7 +741,7 @@ export const IntegrationsView: React.FC = () => {
         setIntegrations(prev =>
             prev.map(i =>
                 i.name === name
-                    ? { ...i, isConnected: true, connectedAccount: 'my-account', repos: mockRepos[name] ?? [] }
+                    ? { ...i, isConnected: true, connectedAccount: 'my-account', repos: [] }
                     : i
             )
         );

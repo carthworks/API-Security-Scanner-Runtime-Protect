@@ -165,10 +165,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onFilterVulnerabilities, v
       
       {/* Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="APIs Monitored" value="12" icon={<ServerIcon className="h-6 w-6" />} colorClass="text-blue-400" trend={0} />
+        <StatCard title="APIs Monitored" value={totalVulnerabilities > 0 ? Math.ceil(totalVulnerabilities / 4) : 0} icon={<ServerIcon className="h-6 w-6" />} colorClass="text-blue-400" trend={0} />
         <StatCard title="Total Vulnerabilities" value={totalVulnerabilities} icon={<ShieldIcon className="h-6 w-6" />} colorClass="text-purple-400" trend={-10} />
-        <StatCard title="Critical & High" value={highSeverityCount} icon={<AlertTriangleIcon className="h-6 w-6" />} colorClass="text-red-400" trend={15} />
-        <StatCard title="Runtime Alerts (24h)" value="8" icon={<ZapIcon className="h-6 w-6" />} colorClass="text-yellow-400" trend={-5} />
+        <StatCard title="Critical & High" value={highSeverityCount} icon={<AlertTriangleIcon className="h-6 w-6" />} colorClass="text-red-400" trend={highSeverityCount > 0 ? 15 : 0} />
+        <StatCard title="Runtime Alerts (24h)" value={totalVulnerabilities > 0 ? Math.min(highSeverityCount * 2, 99) : 0} icon={<ZapIcon className="h-6 w-6" />} colorClass="text-yellow-400" trend={-5} />
       </div>
 
       {/* Live Traffic Monitoring */}
@@ -234,7 +234,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ onFilterVulnerabilities, v
                         </tr>
                     </thead>
                     <tbody>
-                        {vulnerabilities.slice(0, 4).map(vuln => (
+                        {vulnerabilities.length === 0 ? (
+                            <tr>
+                                <td colSpan={4} className="py-12 text-center">
+                                    <div className="flex flex-col items-center gap-3 text-gray-500">
+                                        <ShieldIcon className="h-10 w-10 opacity-30" />
+                                        <p className="text-sm font-medium">No vulnerabilities found yet</p>
+                                        <p className="text-xs">Run a scan to discover API security issues.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        ) : vulnerabilities.slice(0, 4).map(vuln => (
                             <tr key={vuln.id} className="border-t border-gray-700 hover:bg-gray-700/50">
                                 <td className="py-4 px-6">
                                   <div className="flex items-center">
