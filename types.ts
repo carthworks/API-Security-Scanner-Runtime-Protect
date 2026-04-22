@@ -208,3 +208,34 @@ export interface ScanJob {
   completedAt?: string;
   error?: string;
 }
+
+export interface ScopeEndpoint {
+  id: string;
+  method: string;
+  path: string;
+  description: string;
+  owaspCategory: string;
+  riskLevel: 'Critical' | 'High' | 'Medium' | 'Low';
+  tested: boolean;
+  vulnerabilityIds: string[];
+  notes?: string;
+}
+
+export interface ComplianceItem {
+  id: string;
+  standard: string;
+  control: string;
+  status: 'Pass' | 'Fail' | 'Partial' | 'N/A';
+  notes: string;
+}
+
+export interface Engagement {
+  id: string;
+  name: string;
+  targetBase: string;
+  environment: string;
+  startDate: string;
+  status: 'Active' | 'Completed';
+  endpoints: ScopeEndpoint[];
+  complianceItems: ComplianceItem[];
+}

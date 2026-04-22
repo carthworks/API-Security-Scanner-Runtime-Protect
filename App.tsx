@@ -8,13 +8,15 @@ import { SettingsView } from './components/SettingsView';
 import { NewScanModal } from './components/NewScanModal';
 import { GuideView } from './components/GuideView';
 import { LoadTestingView } from './components/LoadTestingView';
+import { EngagementView } from './components/EngagementView';
+import { ReportsView } from './components/ReportsView';
 
 import type { Vulnerability, Severity, AIConfig } from './types';
 import { Login } from './components/Login';
 import { Register } from './components/Register';
 import { ScreenLock } from './components/ScreenLock';
 
-export type Page = 'Dashboard' | 'Vulnerabilities' | 'Integrations' | 'Settings' | 'Guide' | 'LoadTesting';
+export type Page = 'Dashboard' | 'Vulnerabilities' | 'Engagement' | 'LoadTesting' | 'Reports' | 'Integrations' | 'Settings' | 'Guide';
 
 const DEFAULT_AI_CONFIG: AIConfig = {
   provider: 'ollama',
@@ -85,6 +87,10 @@ const App: React.FC = () => {
         return <GuideView />;
       case 'LoadTesting':
         return <LoadTestingView aiConfig={aiConfig} />;
+      case 'Engagement':
+        return <EngagementView vulnerabilities={vulnerabilities} />;
+      case 'Reports':
+        return <ReportsView vulnerabilities={vulnerabilities} />;
       default:
         return <Dashboard onFilterVulnerabilities={handleFilterVulnerabilities} vulnerabilities={vulnerabilities} />;
     }

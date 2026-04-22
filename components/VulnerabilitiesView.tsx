@@ -641,17 +641,6 @@ export const VulnerabilitiesView: React.FC<VulnerabilitiesViewProps> = ({ vulner
                         <option value="assignee-desc">Assignee (Z-A)</option>
                     </select>
                 </div>
-                 <div className="flex items-center border-l border-gray-600 pl-4 ml-2">
-                    <label htmlFor="model-select" className="text-sm font-medium text-gray-300 mr-2">AI Model:</label>
-                    <select
-                        id="model-select"
-                        value={selectedModel}
-                        onChange={(e) => setSelectedModel(e.target.value)}
-                        className="rounded-md bg-gray-700 border-transparent text-white focus:border-indigo-500 focus:ring-indigo-500 text-sm py-1"
-                    >
-                        {availableModels.map(m => <option key={m} value={m}>{m}</option>)}
-                    </select>
-                </div>
             </div>
             <div className="text-sm text-gray-400">
                 Showing <span className="font-semibold text-white">{processedVulnerabilities.length}</span> of {vulnerabilities.length} vulnerabilities

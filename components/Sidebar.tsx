@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Page } from '../App';
-import { ChevronLeftIcon, DashboardIcon, GitPullRequestIcon, LockIcon, LogOutIcon, SettingsIcon, ShieldIcon, BookOpenIcon, GaugeIcon } from './Icons';
+import { ChevronLeftIcon, DashboardIcon, GitPullRequestIcon, LockIcon, LogOutIcon, SettingsIcon, ShieldIcon, BookOpenIcon, GaugeIcon, ClipboardListIcon, FileTextIcon } from './Icons';
 
 interface SidebarProps {
     activePage: Page;
@@ -115,6 +115,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, onN
                         label="Guide"
                         isActive={activePage === 'Guide'}
                         onClick={() => handleNavClick('Guide')}
+                        isOpen={isOpen}
+                    />
+                    <NavItem
+                        icon={<ClipboardListIcon className="h-6 w-6 shrink-0" />}
+                        label="Engagement"
+                        isActive={activePage === 'Engagement'}
+                        onClick={() => handleNavClick('Engagement')}
+                        isOpen={isOpen}
+                    />
+                    <NavItem
+                        icon={<FileTextIcon className="h-6 w-6 shrink-0" />}
+                        label="Reports"
+                        isActive={activePage === 'Reports'}
+                        onClick={() => handleNavClick('Reports')}
                         isOpen={isOpen}
                     />
                 </ul>
