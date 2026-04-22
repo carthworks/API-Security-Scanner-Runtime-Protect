@@ -1,6 +1,16 @@
 # Sentinel — API Security Scanner & Runtime Protect
 
+<<<<<<< HEAD
 Sentinel is a developer-centric security platform that **automatically scans APIs for vulnerabilities**, monitors live traffic, and uses a **local Ollama LLM** to generate AI-powered remediation advice — all with zero data leaving your machine.
+=======
+Sentinel is a developer-centric SaaS platform designed to provide comprehensive API security. It automatically scans APIs during development, detects a wide range of vulnerabilities, monitors live traffic for anomalies, and leverages the power of AI to provide actionable, code-level remediation suggestions.
+
+This application is a feature-rich frontend prototype built with React, TypeScript, and the Google Gemini API to demonstrate the core functionalities of such a platform.
+
+![Sentinel Screenshot]
+<img width="1467" height="973" alt="image" src="https://github.com/user-attachments/assets/70453d27-a7d3-4c35-b172-6be212605d7b" />
+
+>>>>>>> 82d0fd0c95bba9ff093d2b25c9ba28629a9815d3
 
 ---
 
