@@ -214,3 +214,34 @@ export const ClipboardIcon: React.FC<IconProps> = ({ className }) => (
         <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6.375c0 .621-.504 1.125-1.125 1.125h-1.5a1.125 1.125 0 01-1.125-1.125V3.75m1.5-1.5v-1.5a1.5 1.5 0 00-3 0v1.5m3 0a1.5 1.5 0 00-3 0M3 8.25V19.5A2.25 2.25 0 005.25 21.75h13.5A2.25 2.25 0 0021 19.5V8.25A2.25 2.25 0 0018.75 6h-13.5A2.25 2.25 0 003 8.25z" />
     </svg>
 );
+
+export const GaugeIcon: React.FC<IconProps> = ({ className }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/>
+    <path d="M12 6v2"/><path d="M6.3 9l1.7 1"/><path d="M17.7 9l-1.7 1"/>
+    <path d="M12 14l4-4"/><circle cx="12" cy="14" r="1"/>
+  </svg>
+);
+
+export const FileTextIcon: React.FC<IconProps> = ({ className }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+    <polyline points="14 2 14 8 20 8"/>
+    <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+  </svg>
+);
+
+export const ClipboardListIcon: React.FC<IconProps> = ({ className }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+    <rect x="9" y="3" width="6" height="4" rx="1"/>
+    <line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/>
+  </svg>
+);
+
+export const AwardIcon: React.FC<IconProps> = ({ className }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="8" r="7"/>
+    <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+  </svg>
+);

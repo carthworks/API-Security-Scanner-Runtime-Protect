@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Page } from '../App';
-import { ChevronLeftIcon, DashboardIcon, GitPullRequestIcon, LockIcon, LogOutIcon, SettingsIcon, ShieldIcon, BookOpenIcon } from './Icons';
+import { ChevronLeftIcon, DashboardIcon, GitPullRequestIcon, LockIcon, LogOutIcon, SettingsIcon, ShieldIcon, BookOpenIcon, GaugeIcon } from './Icons';
 
 interface SidebarProps {
     activePage: Page;
@@ -31,7 +31,7 @@ const NavItem: React.FC<{
             title={!isOpen ? label : undefined}
         >
             {icon}
-            <span className={`ml-3 font-medium whitespace-nowrap ${!isOpen ? 'lg:hidden' : ''}`}>{label}</span>
+            <span className={`ml-3 font-medium whitespace-nowrap ${!isOpen ? 'lg:hidden' : ''}`}>{label === 'LoadTesting' ? 'Load Testing' : label}</span>
         </a>
     </li>
 );
@@ -101,6 +101,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, onN
                         label="Settings"
                         isActive={activePage === 'Settings'}
                         onClick={() => handleNavClick('Settings')}
+                        isOpen={isOpen}
+                    />
+                    <NavItem
+                        icon={<GaugeIcon className="h-6 w-6 shrink-0" />}
+                        label="LoadTesting"
+                        isActive={activePage === 'LoadTesting'}
+                        onClick={() => handleNavClick('LoadTesting')}
                         isOpen={isOpen}
                     />
                     <NavItem

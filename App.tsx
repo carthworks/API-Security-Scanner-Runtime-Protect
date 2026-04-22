@@ -7,13 +7,20 @@ import { IntegrationsView } from './components/IntegrationsView';
 import { SettingsView } from './components/SettingsView';
 import { NewScanModal } from './components/NewScanModal';
 import { GuideView } from './components/GuideView';
+import { LoadTestingView } from './components/LoadTestingView';
 
-import type { Vulnerability, Severity } from './types';
+import type { Vulnerability, Severity, AIConfig } from './types';
 import { Login } from './components/Login';
 import { Register } from './components/Register';
 import { ScreenLock } from './components/ScreenLock';
 
-export type Page = 'Dashboard' | 'Vulnerabilities' | 'Integrations' | 'Settings' | 'Guide';
+export type Page = 'Dashboard' | 'Vulnerabilities' | 'Integrations' | 'Settings' | 'Guide' | 'LoadTesting';
+
+const DEFAULT_AI_CONFIG: AIConfig = {
+  provider: 'ollama',
+  model: 'llama2',
+  baseUrl: 'http://localhost:11434',
+};
 
 const App: React.FC = () => {
   const [activePage, setActivePage] = useState<Page>('Dashboard');
@@ -24,24 +31,13 @@ const App: React.FC = () => {
   const [vulnerabilityFilter, setVulnerabilityFilter] = useState<Severity | null>(null);
   const [authState, setAuthState] = useState<'unauthenticated' | 'authenticated' | 'locked'>('unauthenticated');
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
+  const [aiConfig, setAiConfig] = useState<AIConfig>(DEFAULT_AI_CONFIG);
 
-  const handleLogin = () => {
-    setAuthState('authenticated');
-    setActivePage('Dashboard'); // Reset to dashboard on login
-  };
-
-  const handleLogout = () => {
-    setAuthState('unauthenticated');
-    setAuthView('login');
-  };
-
+  const handleLogin = () => { setAuthState('authenticated'); setActivePage('Dashboard'); };
+  const handleLogout = () => { setAuthState('unauthenticated'); setAuthView('login'); };
   const handleLock = () => setAuthState('locked');
   const handleUnlock = () => setAuthState('authenticated');
-
-  const handleRegister = () => {
-    // After registration, switch to login view for user to sign in
-    setAuthView('login');
-  };
+  const handleRegister = () => setAuthView('login');
 
   const handleAddVulnerability = (newVulnerability: Vulnerability) => {
     setVulnerabilities(prev => [newVulnerability, ...prev]);
@@ -50,7 +46,7 @@ const App: React.FC = () => {
   };
 
   const handleNavigateToVulnerabilities = () => {
-    setVulnerabilityFilter(null); // Clear any filters when navigating directly
+    setVulnerabilityFilter(null);
     setActivePage('Vulnerabilities');
   };
 
@@ -64,47 +60,51 @@ const App: React.FC = () => {
       case 'Dashboard':
         return <Dashboard onFilterVulnerabilities={handleFilterVulnerabilities} vulnerabilities={vulnerabilities} />;
       case 'Vulnerabilities':
-        return <VulnerabilitiesView 
-                  vulnerabilities={vulnerabilities} 
-                  setVulnerabilities={setVulnerabilities}
-                  filter={vulnerabilityFilter}
-                  setFilter={setVulnerabilityFilter}
-                  teamMembers={teamMembers}
-                />;
+        return (
+          <VulnerabilitiesView
+            vulnerabilities={vulnerabilities}
+            setVulnerabilities={setVulnerabilities}
+            filter={vulnerabilityFilter}
+            setFilter={setVulnerabilityFilter}
+            teamMembers={teamMembers}
+            aiConfig={aiConfig}
+          />
+        );
       case 'Integrations':
         return <IntegrationsView />;
       case 'Settings':
-        return <SettingsView teamMembers={teamMembers} setTeamMembers={setTeamMembers} />;
+        return (
+          <SettingsView
+            teamMembers={teamMembers}
+            setTeamMembers={setTeamMembers}
+            aiConfig={aiConfig}
+            setAiConfig={setAiConfig}
+          />
+        );
       case 'Guide':
         return <GuideView />;
+      case 'LoadTesting':
+        return <LoadTestingView aiConfig={aiConfig} />;
       default:
-        return <Dashboard onFilterVulnerabilities={handleFilterVulnerabilities} vulnerabilities={vulnerabilities}/>;
+        return <Dashboard onFilterVulnerabilities={handleFilterVulnerabilities} vulnerabilities={vulnerabilities} />;
     }
   };
-  
-  if (authState === 'locked') {
-    return <ScreenLock onUnlock={handleUnlock} onLogout={handleLogout} />;
-  }
+
+  if (authState === 'locked') return <ScreenLock onUnlock={handleUnlock} onLogout={handleLogout} />;
 
   if (authState === 'unauthenticated') {
-    if (authView === 'login') {
-      return <Login onLogin={handleLogin} onSwitchToRegister={() => setAuthView('register')} />;
-    } else {
-      return <Register onRegister={handleRegister} onSwitchToLogin={() => setAuthView('login')} />;
-    }
+    return authView === 'login'
+      ? <Login onLogin={handleLogin} onSwitchToRegister={() => setAuthView('register')} />
+      : <Register onRegister={handleRegister} onSwitchToLogin={() => setAuthView('login')} />;
   }
-
 
   return (
     <div className="flex h-screen bg-gray-900 font-sans text-gray-200">
-       <div
-          onClick={() => setIsSidebarOpen(false)}
-          className={`fixed inset-0 bg-black/60 z-30 lg:hidden transition-opacity duration-300 ${
-              isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          }`}
-          aria-hidden="true"
-      ></div>
-
+      <div
+        onClick={() => setIsSidebarOpen(false)}
+        className={`fixed inset-0 bg-black/60 z-30 lg:hidden transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        aria-hidden="true"
+      />
       <Sidebar
         activePage={activePage}
         setActivePage={setActivePage}
@@ -115,10 +115,7 @@ const App: React.FC = () => {
         onLogout={handleLogout}
       />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header 
-          onNewScanClick={() => setIsScanModalOpen(true)}
-          onMenuClick={() => setIsSidebarOpen(true)}
-        />
+        <Header onNewScanClick={() => setIsScanModalOpen(true)} onMenuClick={() => setIsSidebarOpen(true)} />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-900 p-6 md:p-8">
           {renderContent()}
         </main>
@@ -127,6 +124,7 @@ const App: React.FC = () => {
         isOpen={isScanModalOpen}
         onClose={() => setIsScanModalOpen(false)}
         onAddVulnerability={handleAddVulnerability}
+        aiConfig={aiConfig}
       />
     </div>
   );

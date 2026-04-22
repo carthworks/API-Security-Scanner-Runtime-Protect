@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { UserPlusIcon, PencilIcon, TrashIcon, CheckCircleIcon, XCircleIcon } from './Icons';
+import type { AIConfig, AIProvider } from '../types';
 
 // A simple toggle switch component for settings
 const ToggleSwitch: React.FC<{ enabled: boolean; onChange: (enabled: boolean) => void; label: string }> = ({ enabled, onChange, label }) => (
@@ -43,9 +44,11 @@ const InputRow: React.FC<{ label: string; id: string; type: string; value: strin
 interface SettingsViewProps {
     teamMembers: string[];
     setTeamMembers: React.Dispatch<React.SetStateAction<string[]>>;
+    aiConfig: AIConfig;
+    setAiConfig: React.Dispatch<React.SetStateAction<AIConfig>>;
 }
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ teamMembers, setTeamMembers }) => {
+export const SettingsView: React.FC<SettingsViewProps> = ({ teamMembers, setTeamMembers, aiConfig, setAiConfig }) => {
     const [teamName, setTeamName] = useState('Dev Team');
     const [contactEmail, setContactEmail] = useState('dev@sentinel.io');
 
@@ -205,6 +208,61 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ teamMembers, setTeam
                 Enable 2FA
             </button>
           </div>
+      </SettingsSection>
+
+      {/* AI Configuration */}
+      <SettingsSection title="AI Provider" description="Configure which AI model powers scanning, remediation, and CVE analysis.">
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1">Provider</label>
+          <select
+            value={aiConfig.provider}
+            onChange={e => setAiConfig(c => ({ ...c, provider: e.target.value as AIProvider, model: e.target.value === 'gemini' ? 'gemini-2.5-flash' : 'llama2' }))}
+            className="rounded-md bg-gray-700 border-gray-600 text-white text-sm p-2 focus:ring-indigo-500 focus:border-indigo-500 max-w-xs"
+          >
+            <option value="ollama">Ollama (Local)</option>
+            <option value="gemini">Google Gemini (Cloud)</option>
+            <option value="custom">Custom OpenAI-Compatible</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1">Model</label>
+          <input
+            type="text"
+            value={aiConfig.model}
+            onChange={e => setAiConfig(c => ({ ...c, model: e.target.value }))}
+            className="mt-1 block w-full max-w-md rounded-md border-gray-600 bg-gray-700 text-white shadow-sm p-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+            placeholder={aiConfig.provider === 'gemini' ? 'gemini-2.5-flash' : 'llama2'}
+          />
+        </div>
+        {aiConfig.provider !== 'ollama' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">API Key</label>
+            <input
+              type="password"
+              value={aiConfig.apiKey ?? ''}
+              onChange={e => setAiConfig(c => ({ ...c, apiKey: e.target.value }))}
+              className="mt-1 block w-full max-w-md rounded-md border-gray-600 bg-gray-700 text-white shadow-sm p-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+              placeholder="sk-... or AIza..."
+            />
+          </div>
+        )}
+        {aiConfig.provider !== 'gemini' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Base URL</label>
+            <input
+              type="text"
+              value={aiConfig.baseUrl ?? 'http://localhost:11434'}
+              onChange={e => setAiConfig(c => ({ ...c, baseUrl: e.target.value }))}
+              className="mt-1 block w-full max-w-md rounded-md border-gray-600 bg-gray-700 text-white shadow-sm p-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+              placeholder="http://localhost:11434"
+            />
+          </div>
+        )}
+        <div className="pt-2 flex items-center gap-3">
+          <div className="text-xs text-gray-500 bg-gray-900/50 rounded-lg p-2 border border-gray-700">
+            Active: <span className="text-indigo-400 font-semibold">{aiConfig.provider}</span> / <span className="text-white font-mono">{aiConfig.model}</span>
+          </div>
+        </div>
       </SettingsSection>
 
     </div>
